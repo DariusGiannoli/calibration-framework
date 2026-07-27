@@ -6,6 +6,7 @@
 \usepackage{enumitem}
 \usepackage[protrusion=true,expansion=false]{microtype}
 \usepackage[hidelinks]{hyperref}
+\usepackage{amsmath,amssymb}
 
 \title{Calibration Dataset Adequacy Framework\\Working Research Plan}
 \author{}
@@ -34,83 +35,78 @@ protocol or dataset provides enough appropriate evidence to develop and
 evaluate a viable sensor calibration?
 \end{quote}
 
-\section{Proposed Framework}
+\section{Working Definition of Adequacy}
 
-The framework will contain two levels:
-\begin{enumerate}
-    \item \textbf{Universal requirements}: questions that should be considered
-        in any sensor-calibration experiment.
-    \item \textbf{Specific requirements}: tests that depend on the sensor
-        physics, calibration model, application, and expected operating
-        conditions.
-\end{enumerate}
-
-The initial candidate requirement families are:
+A dataset cannot be considered adequate in isolation. Its adequacy must be
+assessed relative to a declared calibration task:
+\begin{equation}
+    \mathcal{T}
+    =
+    \left(
+        \mathbf{s},
+        \mathbf{q},
+        \Omega,
+        \mathcal{C},
+        \mathcal{M},
+        \mathcal{P},
+        \mathcal{G}
+    \right),
+\end{equation}
+where:
 \begin{itemize}
-    \item a clearly declared calibration objective and intended use;
-    \item valid sensor and reference measurements;
-    \item sufficient information to learn the required relationships;
-    \item adequate coverage of the intended operating domain;
-    \item appropriate variation, repetitions, and experimental independence;
-    \item validation without data leakage;
-    \item performance and uncertainty appropriate for the application; and
-    \item reproducible data collection, analysis, and reporting.
+    \item $\mathbf{s}$ is the vector of raw sensor signals used as calibration
+        inputs;
+    \item $\mathbf{q}$ is the reference measurand that the calibration must
+        estimate;
+    \item $\Omega$ is the intended operating domain;
+    \item $\mathcal{C}$ is the set of relevant operating conditions;
+    \item $\mathcal{M}$ is the calibration model or candidate model family;
+    \item $\mathcal{P}$ is the required performance and uncertainty; and
+    \item $\mathcal{G}$ is the intended generalization claim.
 \end{itemize}
 
-These are working categories. Each one must later be justified using existing
-literature, mathematics, physical reasoning, and experimental evidence.
+For an acquired dataset $D$, adequacy is therefore conditional:
+\begin{equation}
+    \operatorname{Adequacy}\left(D \mid \mathcal{T}\right).
+\end{equation}
 
-\section{Two Uses of the Framework}
+\section{Trixial Force Sensor (under rigid mounting)}
 
-\subsection{Before data collection}
+\subsection{Adequacy Definition}
+The sensor indications and reference measurand are
+\begin{equation}
+    \mathbf{s}
+    =
+    \begin{bmatrix}
+        c_1 & c_2 & c_3
+    \end{bmatrix}^{\mathsf{T}},
+    \qquad
+    \mathbf{q}
+    =
+    \begin{bmatrix}
+        F_x & F_y & F_z
+    \end{bmatrix}^{\mathsf{T}}.
+\end{equation}
 
-Assess whether a proposed protocol is capable of producing the evidence needed
-for calibration. This can guide the choice of trajectories, loading conditions,
-repetitions, and validation runs.
-
-\subsection{After data collection}
-
-Assess whether the experiment actually produced a viable dataset using the
-achieved reference measurements, raw sensor signals, run information, and
-experimental conditions.
-
-For each requirement, the framework should explain whether the available
-evidence passes, fails, or is insufficient to decide, and why.
-
-\section{Triaxial Sensor Case Study}
-
-The general framework will be applied to the calibration of the triaxial force
-sensor. It will be used to assess candidate combinations of calibration
-trajectories, including uniaxial tests, spirals, and Lissajous curves.
-
-The objective is not to assume that these trajectories are sufficient. The
-objective is to use the framework to determine what they can identify, which
-parts of the operating domain they represent, what evidence they do not
-provide, and whether additional experiments are required.
-
-\section{Proposed Work Plan}
-
-\begin{enumerate}
-    \item Confirm the objective and scope of the framework.
-    \item Derive and justify the universal requirement families.
-    \item Translate each requirement into practical, model- or sensor-specific
-        tests.
-    \item Compare candidate experimental protocols before collecting data.
-    \item collect the triaxial sensor data and assess the achieved dataset; and
-    \item calibrate the sensor and evaluate whether the framework's conclusions
-        are supported by independent validation results.
-\end{enumerate}
-
-\section{Points to Discuss with the Supervisor}
-
+For this case, the calibration task must declare:
 \begin{itemize}
-    \item Is the objective aligned with the intended research contribution?
-    \item Should the framework assess both planned protocols and collected
-        datasets?
-    \item How general should the universal part of the framework be?
-    \item Is the triaxial sensor intended as the principal validation case?
-    \item What level of mathematical proof and experimental validation is
-        expected?
+    \item the intended three-dimensional force domain $\Omega$;
+    \item the mounting and operating conditions $\mathcal{C}$;
+    \item the candidate calibration models $\mathcal{M}$;
+    \item the required performance and uncertainty $\mathcal{P}$; and
+    \item the runs, conditions, or sensor units to which the calibration is
+        expected to generalize, represented by $\mathcal{G}$.
 \end{itemize}
+
+A triaxial calibration dataset is considered adequate when it provides enough
+valid and independent evidence to develop the declared mapping from the three
+coil signals to the three force components, represent the claimed individual
+and combined loading states, and evaluate calibration performance without data
+leakage.
+
+This definition does not assume that any particular calibration trajectory is
+sufficient. Uniaxial, spiral, Lissajous, or other trajectories must be assessed
+according to the evidence they actually provide.
+
 
 \end{document}
