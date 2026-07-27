@@ -237,6 +237,74 @@ The required number of independent runs and minimum effective sample size must
 be declared according to the intended generalization claim and calibration
 model.
 
+\subsection{Criterion D5: Leakage-Resistant Validation}
+
+This criterion determines whether calibration performance is evaluated using
+data that are independent of model development and consistent with the declared
+generalization claim $\mathcal{G}$.
+
+The dataset is divided into
+\begin{equation}
+    D
+    =
+    D_{\mathrm{dev}}
+    \;\dot{\cup}\;
+    D_{\mathrm{test}},
+\end{equation}
+where $D_{\mathrm{dev}}$ is used for preprocessing, model fitting, and model
+selection, while $D_{\mathrm{test}}$ is used only for final performance
+evaluation.
+
+Let $g_i$ identify the independent experimental unit required by the
+generalization claim, such as a run, operating condition, or physical sensor
+unit. Define
+\begin{equation}
+    \mathcal{G}(D')
+    =
+    \left\{
+        g_i :
+        i\in D'
+    \right\}.
+\end{equation}
+
+The development and test sets must satisfy
+\begin{equation}
+    \mathcal{G}(D_{\mathrm{dev}})
+    \cap
+    \mathcal{G}(D_{\mathrm{test}})
+    =
+    \varnothing.
+\end{equation}
+
+All data-dependent operations must be determined using only
+$D_{\mathrm{dev}}$. If
+\begin{equation}
+    \widehat{\boldsymbol{\theta}}
+    =
+    \operatorname{Fit}(D_{\mathrm{dev}}),
+\end{equation}
+then the reported performance must be calculated as
+\begin{equation}
+    \widehat{\mathcal{P}}_{\mathrm{test}}
+    =
+    \operatorname{Evaluate}
+    \left(
+        f_{\widehat{\boldsymbol{\theta}}},
+        D_{\mathrm{test}}
+    \right).
+\end{equation}
+
+The dataset satisfies D5 when the development and test units are disjoint, the
+test set was not used during model development, and the number of independent
+test units satisfies
+\begin{equation}
+    \left|
+        \mathcal{G}(D_{\mathrm{test}})
+    \right|
+    \geq
+    G_{\mathrm{test}}^{\min}.
+\end{equation}
+
 
 
 
@@ -762,4 +830,99 @@ The first dataset satisfies D4 when
 The minimum number of independent runs, required repetitions per trajectory
 configuration, autocorrelation lag, and minimum effective sample size remain to
 be declared.
+
+\subsubsection{Application of D5}
+
+For the first application, the declared generalization target is new runs of
+the same physical sensor under the conditions $\mathcal{C}_1$. Therefore, the
+independent validation unit is the complete experimental run.
+
+Let $\mathcal{R}_1$ be the set of recorded runs. It is divided into
+development and test runs:
+\begin{equation}
+    \mathcal{R}_1
+    =
+    \mathcal{R}_{\mathrm{dev}}
+    \;\dot{\cup}\;
+    \mathcal{R}_{\mathrm{test}},
+\end{equation}
+with
+\begin{equation}
+    \mathcal{R}_{\mathrm{dev}}
+    \cap
+    \mathcal{R}_{\mathrm{test}}
+    =
+    \varnothing.
+\end{equation}
+
+The corresponding datasets are
+\begin{equation}
+    D_{\mathrm{dev}}
+    =
+    \bigcup_{r\in\mathcal{R}_{\mathrm{dev}}}D_{1,r},
+    \qquad
+    D_{\mathrm{test}}
+    =
+    \bigcup_{r\in\mathcal{R}_{\mathrm{test}}}D_{1,r}.
+\end{equation}
+
+The affine calibration parameters are estimated using only the development
+runs:
+\begin{equation}
+    \left(
+        \widehat{\mathbf{A}},
+        \widehat{\mathbf{b}}
+    \right)
+    =
+    \arg\min_{\mathbf{A},\mathbf{b}}
+    \sum_{i\in D_{\mathrm{dev}}}
+    \left\|
+        \mathbf{A}\mathbf{s}_i
+        +
+        \mathbf{b}
+        -
+        \mathbf{q}_i
+    \right\|_2^2.
+\end{equation}
+
+For each test sample, the predicted force and error are
+\begin{equation}
+    \widehat{\mathbf{q}}_i
+    =
+    \widehat{\mathbf{A}}\mathbf{s}_i
+    +
+    \widehat{\mathbf{b}},
+    \qquad
+    \mathbf{e}_i
+    =
+    \widehat{\mathbf{q}}_i-\mathbf{q}_i.
+\end{equation}
+
+The final per-axis RMSE is calculated only on the held-out runs:
+\begin{equation}
+    \operatorname{RMSE}_{j,\mathrm{test}}
+    =
+    \sqrt{
+        \frac{1}{N_{\mathrm{test}}}
+        \sum_{i\in D_{\mathrm{test}}}
+        e_{i,j}^{2}
+    },
+    \qquad
+    j\in\{x,y,z\}.
+\end{equation}
+
+The first application satisfies D5 when
+\begin{equation}
+    \mathcal{R}_{\mathrm{dev}}
+    \cap
+    \mathcal{R}_{\mathrm{test}}
+    =
+    \varnothing,
+    \qquad
+    \left|\mathcal{R}_{\mathrm{test}}\right|
+    \geq
+    R_{\mathrm{test}}^{\min},
+\end{equation}
+and the test runs have not been used for preprocessing, model selection,
+parameter estimation, or threshold selection.
 \end{document}
