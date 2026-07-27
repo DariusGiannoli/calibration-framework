@@ -1,0 +1,22 @@
+# Synthetic values for software verification only; not F/T specifications.
+schema_version: "0.1"
+instrument_id: synthetic_reference_ft
+kind: reference
+calibration_certificate_id: SYNTHETIC-CERTIFICATE
+channels:
+  Fx:
+    unit: N
+    valid_min: -20.0
+    valid_max: 20.0
+    expanded_uncertainty: 0.02
+  Fy:
+    unit: N
+    valid_min: -20.0
+    valid_max: 20.0
+    expanded_uncertainty: 0.02
+  Fz:
+    unit: N
+    valid_min: -20.0
+    valid_max: 20.0
+    expanded_uncertainty: 0.02
+

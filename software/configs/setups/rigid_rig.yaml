@@ -1,0 +1,5 @@
+schema_version: "0.1"
+setup_id: rigid_rig
+maximum_time_offset_s: null
+reference_to_sensor_rotation: null
+

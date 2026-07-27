@@ -1,0 +1,9 @@
+# Synthetic values for software verification only; not rig specifications.
+schema_version: "0.1"
+setup_id: synthetic_rigid_rig
+maximum_time_offset_s: 0.002
+reference_to_sensor_rotation:
+  - [1.0, 0.0, 0.0]
+  - [0.0, 1.0, 0.0]
+  - [0.0, 0.0, 1.0]
+

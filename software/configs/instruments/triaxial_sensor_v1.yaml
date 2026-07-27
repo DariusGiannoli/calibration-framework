@@ -1,0 +1,17 @@
+schema_version: "0.1"
+instrument_id: triaxial_sensor_v1
+kind: sensor
+channels:
+  c1:
+    unit: adc_count
+    valid_min: null
+    valid_max: null
+  c2:
+    unit: adc_count
+    valid_min: null
+    valid_max: null
+  c3:
+    unit: adc_count
+    valid_min: null
+    valid_max: null
+

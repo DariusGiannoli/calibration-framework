@@ -1,0 +1,25 @@
+# Complete synthetic D1 task used for examples and automated tests.
+schema_version: "0.1"
+task_id: synthetic_triaxial_t1
+profiles:
+  sensor: sensor.yaml
+  reference: reference.yaml
+  setup: setup.yaml
+dataset_mapping:
+  sensor_timestamp_column: sensor_time_s
+  reference_timestamp_column: reference_time_s
+  sensor_channels:
+    c1: c1
+    c2: c2
+    c3: c3
+  reference_channels:
+    Fx: Fx_ref
+    Fy: Fy_ref
+    Fz: Fz_ref
+d1:
+  maximum_reference_uncertainty:
+    Fx: 0.05
+    Fy: 0.05
+    Fz: 0.05
+  require_reference_certificate: true
+

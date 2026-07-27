@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "calibration-adequacy"
+version = "0.1.0"
+description = "Executable checks for calibration dataset adequacy criteria"
+requires-python = ">=3.9"
+dependencies = [
+    "pydantic>=2.8,<3",
+    "PyYAML>=6,<7",
+]
+
+[project.scripts]
+calibration-adequacy = "calibration_adequacy.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "software/src"}
+
+[tool.setuptools.packages.find]
+where = ["software/src"]
+

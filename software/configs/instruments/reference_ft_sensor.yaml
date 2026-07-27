@@ -1,0 +1,21 @@
+schema_version: "0.1"
+instrument_id: reference_ft_sensor
+kind: reference
+calibration_certificate_id: null
+channels:
+  Fx:
+    unit: N
+    valid_min: null
+    valid_max: null
+    expanded_uncertainty: null
+  Fy:
+    unit: N
+    valid_min: null
+    valid_max: null
+    expanded_uncertainty: null
+  Fz:
+    unit: N
+    valid_min: null
+    valid_max: null
+    expanded_uncertainty: null
+

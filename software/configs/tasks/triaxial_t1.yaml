@@ -1,0 +1,24 @@
+schema_version: "0.1"
+task_id: triaxial_t1
+profiles:
+  sensor: ../instruments/triaxial_sensor_v1.yaml
+  reference: ../instruments/reference_ft_sensor.yaml
+  setup: ../setups/rigid_rig.yaml
+dataset_mapping:
+  sensor_timestamp_column: sensor_time_s
+  reference_timestamp_column: reference_time_s
+  sensor_channels:
+    c1: c1
+    c2: c2
+    c3: c3
+  reference_channels:
+    Fx: Fx_ref
+    Fy: Fy_ref
+    Fz: Fz_ref
+d1:
+  maximum_reference_uncertainty:
+    Fx: null
+    Fy: null
+    Fz: null
+  require_reference_certificate: true
+
