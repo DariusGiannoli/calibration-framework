@@ -63,6 +63,34 @@ For an acquired dataset $D$, adequacy is therefore conditional:
     \operatorname{Adequacy}\left(D \mid \mathcal{T}\right).
 \end{equation}
 
+\subsection{Criterion D0: Calibration Claim Completeness}
+
+D0 is a precondition for dataset assessment. Each component of
+$\mathcal{T}$ must be specified with enough detail to evaluate the applicable
+criteria. In particular, the claimed domains, model family, performance
+requirements, and generalization target cannot remain implicit.
+
+Let $\operatorname{Specified}(x)$ indicate that $x$ is defined at the level
+required for assessment. D0 is satisfied when
+\begin{equation}
+    \bigwedge_{
+        x\in
+        \left\{
+            \mathbf{s},
+            \mathbf{q},
+            \Omega,
+            \mathcal{C},
+            \mathcal{M},
+            \mathcal{P},
+            \mathcal{G}
+        \right\}
+    }
+    \operatorname{Specified}(x)
+\end{equation}
+is true. If a required component is missing, the affected criteria and the
+overall assessment are \textsc{Indeterminate}, rather than being assigned
+assumed values.
+
 %==================================================================%
 \section{Universal Criteria}
 
@@ -89,62 +117,108 @@ where $\Delta t_i$ is the synchronization error,
 $\mathcal{S}_{\mathrm{valid}}$ and $\mathcal{Q}_{\mathrm{valid}}$ are the valid
 measurement ranges, and $U_{\mathrm{ref}}$ is the reference-sensor uncertainty.
 
-The units, axis directions, and coordinate transformation between the
-reference sensor and the triaxial sensor must also be known. If these
-conditions are not satisfied, the input--target pairs cannot be trusted for
-calibration.
+The units, axis directions, coordinate transformations, acquisition bandwidth,
+and sampling process must also be known whenever they affect the declared
+calibration task. Missing values, exclusions, clipping, saturation, and other
+invalid observations must be detected and handled using a documented rule.
+Excluding invalid observations does not automatically satisfy D1: the
+remaining dataset and the exclusion mechanism must still support the declared
+claim.
 
-\subsection{Criterion D2: Domain Coverage}
+D1 is \textsc{Pass} when the retained sensor--reference pairs are trustworthy
+and the required measurement evidence is available. It is \textsc{Fail} when
+a known measurement defect invalidates the intended use, and
+\textsc{Indeterminate} when essential validity evidence is unavailable.
 
-Domain coverage determines whether the achieved reference measurements
-represent the intended operating domain $\Omega$ with sufficient spatial
-resolution.
+\subsection{Criterion D2: Claimed-Domain Coverage}
 
-Let the achieved reference points be
+D2 determines whether the achieved dataset represents the domain covered by
+the calibration claim. The complete claim domain combines the measurand domain
+and the relevant operating conditions:
+\begin{equation}
+    \mathcal{X}
+    =
+    \Omega\times\mathcal{C}.
+\end{equation}
+
+Let $\mathbf{z}_i\in\mathcal{C}$ denote the operating conditions associated
+with observation $i$. The achieved support is
 \begin{equation}
     \mathcal{S}_D
     =
     \left\{
-        \mathbf{q}_1,\ldots,\mathbf{q}_N
-    \right\}.
+        \left(\mathbf{q}_i,\mathbf{z}_i\right)
+        :
+        i=1,\ldots,N
+    \right\}
+    \subseteq
+    \mathcal{X}.
 \end{equation}
 
-The normalized distance between two points in $\Omega$ is
+The universal requirement is that every part of the claimed domain is either
+supported by the achieved data or explicitly excluded from the calibration
+claim:
 \begin{equation}
-    d_{\Omega}(\mathbf{q},\mathbf{q}_i)
+    \mathcal{X}_{\mathrm{claim}}
+    \subseteq
+    \mathcal{X}_{\mathrm{supported}}
+    \cup
+    \mathcal{X}_{\mathrm{excluded}}.
+\end{equation}
+Marginal coverage of each variable is not sufficient when their joint
+combinations are part of the claim. Commanded trajectories provide prospective
+evidence only; retrospective D2 assessment uses achieved reference
+measurements and recorded conditions.
+
+For a continuous domain equipped with an appropriate normalized distance
+$d_{\mathcal{X}}$, one possible coverage diagnostic is the fill distance
+\begin{equation}
+    h(D,\mathcal{X})
     =
-    \sqrt{
-        \sum_{j=1}^{m}
-        \left(
-            \frac{q_j-q_{i,j}}
-                 {q_j^{\max}-q_j^{\min}}
-        \right)^2
-    },
+    \sup_{\mathbf{x}\in\mathcal{X}}
+    \min_{\mathbf{x}_i\in\mathcal{S}_D}
+    d_{\mathcal{X}}(\mathbf{x},\mathbf{x}_i).
 \end{equation}
-where $m$ is the dimension of the reference measurand.
+For categorical or mixed domains, coverage is instead evaluated within the
+declared condition strata. The distance, partition, resolution, and threshold
+are application-dependent tests rather than universal constants.
 
-The fill distance of the dataset is
-\begin{equation}
-    h(D,\Omega)
-    =
-    \sup_{\mathbf{q}\in\Omega}
-    \min_{\mathbf{q}_i\in\mathcal{S}_D}
-    d_{\Omega}(\mathbf{q},\mathbf{q}_i).
-\end{equation}
+D2 is \textsc{Pass} when the supported and excluded regions justify the full
+claim, \textsc{Fail} when a claimed region is known to be unsupported, and
+\textsc{Indeterminate} when the domain, achieved conditions, or required
+coverage resolution has not been declared.
 
-The dataset satisfies the domain-coverage requirement when
-\begin{equation}
-    h(D,\Omega)\leq h_{\max},
-\end{equation}
-where $h_{\max}$ is the declared maximum acceptable distance from any point in
-the intended domain to the nearest achieved calibration point.
 \subsection{Criterion D3: Informativeness and Identifiability}
 
 Informativeness determines whether the dataset contains enough independent
-variation to identify the declared calibration model $\mathcal{M}$ without
-ambiguity.
+variation to distinguish the relationships required by the declared model
+family $\mathcal{M}$. The universal obligation is predictive
+distinguishability: models that are observationally indistinguishable on the
+dataset must not imply materially different predictions within the claimed
+domain.
 
-For a parametric calibration model
+For two models $f_{\boldsymbol{\theta}_1}$ and
+$f_{\boldsymbol{\theta}_2}$, this obligation can be expressed as
+\begin{equation}
+    \left[
+        f_{\boldsymbol{\theta}_1}(\mathbf{s}_i)
+        =
+        f_{\boldsymbol{\theta}_2}(\mathbf{s}_i),
+        \quad
+        i=1,\ldots,N
+    \right]
+    \Longrightarrow
+    f_{\boldsymbol{\theta}_1}
+    \sim_{\mathcal{X}}
+    f_{\boldsymbol{\theta}_2},
+\end{equation}
+where $\sim_{\mathcal{X}}$ means equivalence to the resolution required by the
+calibration claim over $\mathcal{X}$. The dataset must also avoid confounding
+the measurand with operating condition, run, time, or protocol whenever their
+effects must be separated.
+
+For an identifiable parametric calibration model, a local model-specific test
+uses the sensitivity matrix. Given
 \begin{equation}
     \widehat{\mathbf{q}}
     =
@@ -189,6 +263,16 @@ The dataset satisfies D3 when
 where $\kappa_{\max}$ is the maximum acceptable condition number after
 appropriate normalization of the model variables.
 
+The rank and condition-number test is not universal to every model family.
+Linear models use design-matrix rank, nonlinear parametric models may use
+local sensitivities, dynamic models require excitation across relevant
+frequencies and histories, and over-parameterized predictive models require
+model-specific evidence. D3 is \textsc{Pass} when the declared model
+relationships are distinguishable with adequate practical conditioning,
+\textsc{Fail} when a known ambiguity or confounding remains, and
+\textsc{Indeterminate} when the model-dependent test or its threshold is
+undefined.
+
 \subsection{Criterion D4: Independent Replication and Dependence}
 
 This criterion determines whether the dataset contains sufficient independent
@@ -205,9 +289,12 @@ where $D_r$ contains the observations collected during run $r$.
 
 Samples collected within the same continuous run may be temporally correlated.
 Therefore, the number of recorded samples is not necessarily the number of
-independent observations.
+independent observations. The independent unit must be defined from the
+generalization claim $\mathcal{G}$, and repetitions must independently repeat
+the relevant initialization and experimental procedure.
 
-For a relevant signal $v$, the approximate effective sample size is
+For a stationary time series, one possible dependence diagnostic is the
+approximate effective sample size
 \begin{equation}
     N_{\mathrm{eff},v}
     =
@@ -223,7 +310,7 @@ where $N_r$ is the number of samples in run $r$,
 $\rho_{r,v}(k)$ is the lag-$k$ autocorrelation, and $K_v$ is the maximum
 relevant correlation lag.
 
-The dataset satisfies D4 when
+For this diagnostic, a possible application-specific requirement is
 \begin{equation}
     R\geq R_{\min},
     \qquad
@@ -233,9 +320,13 @@ The dataset satisfies D4 when
 \end{equation}
 where $\mathcal{V}$ is the set of signals relevant to the calibration.
 
-The required number of independent runs and minimum effective sample size must
-be declared according to the intended generalization claim and calibration
-model.
+The effective-sample-size expression is not a universal estimator: the
+appropriate dependence model depends on the signals, sampling process, and
+experimental design. D4 is \textsc{Pass} when the required independent units,
+repetitions, and dependence evidence are available, \textsc{Fail} when
+recorded samples are incorrectly treated as independent or required
+repetitions are absent, and \textsc{Indeterminate} when the independent unit or
+minimum evidence has not been declared.
 
 \subsection{Criterion D5: Leakage-Resistant Validation}
 
@@ -254,6 +345,18 @@ The dataset is divided into
 where $D_{\mathrm{dev}}$ is used for preprocessing, model fitting, and model
 selection, while $D_{\mathrm{test}}$ is used only for final performance
 evaluation.
+
+When preprocessing or model choices are data-dependent, development data may
+be divided internally as
+\begin{equation}
+    D_{\mathrm{dev}}
+    =
+    D_{\mathrm{fit}}
+    \;\dot{\cup}\;
+    D_{\mathrm{select}},
+\end{equation}
+or evaluated through an equivalent group-aware resampling procedure. The final
+test data remain outside all such decisions.
 
 Let $g_i$ identify the independent experimental unit required by the
 generalization claim, such as a run, operating condition, or physical sensor
@@ -305,6 +408,12 @@ test units satisfies
     G_{\mathrm{test}}^{\min}.
 \end{equation}
 
+D5 is \textsc{Pass} when the partition unit matches $\mathcal{G}$, all
+data-dependent decisions are isolated from the final test units, and the test
+evidence is sufficient. It is \textsc{Fail} when information crosses the
+development--test boundary, and \textsc{Indeterminate} when partition
+provenance or the relevant generalization unit is unknown.
+
 \subsection{Criterion D6: Performance Evaluation and Uncertainty}
 
 This criterion determines whether the independent test data allow calibration
@@ -317,6 +426,9 @@ For each test sample $i$, the calibration error is
     =
     \widehat{\mathbf{q}}_i-\mathbf{q}_i.
 \end{equation}
+The uncertainty $U(\widehat{\mathbf{q}}_i)$ associated with an individual
+calibrated estimate is distinct from uncertainty in a reported aggregate
+performance metric. Both must be addressed when required by $\mathcal{P}$.
 
 Let $m_\ell$ be a required performance metric. Its estimate on the independent
 test data is
@@ -353,6 +465,24 @@ The dataset provides sufficiently precise performance evidence when
 where $w_\ell^{\max}$ is the maximum acceptable uncertainty in the reported
 metric.
 
+Global metrics can hide local failure. If the claim domain is divided into
+relevant regions $\{\mathcal{B}_b\}_{b=1}^{B}$, regional performance is
+\begin{equation}
+    \widehat{m}_{\ell,b}
+    =
+    m_\ell
+    \left(
+        \left\{
+            i\in D_{\mathrm{test}}
+            :
+            \left(\mathbf{q}_i,\mathbf{z}_i\right)
+            \in\mathcal{B}_b
+        \right\}
+    \right).
+\end{equation}
+The regions and required precision must be declared before inspecting final
+test results.
+
 For a metric where smaller values indicate better performance, the calibrated
 model satisfies the corresponding requirement when
 \begin{equation}
@@ -363,7 +493,88 @@ model satisfies the corresponding requirement when
 where $\tau_\ell$ is the declared acceptance threshold. Dataset adequacy and
 calibration acceptance are reported separately: a sufficiently precise result
 showing that the model fails a requirement does not make the dataset
-inadequate.
+inadequate. D6 is \textsc{Pass} when test performance and required uncertainty
+quantities can be estimated with the declared precision, \textsc{Fail} when
+the independent test evidence is known to be insufficiently precise, and
+\textsc{Indeterminate} when metrics, thresholds, uncertainty methods, or
+precision requirements are undefined. Whether the calibrated model satisfies
+$\mathcal{P}$ is a separate acceptance result.
+
+\subsection{Criterion D7: Reproducibility and Provenance}
+
+D7 determines whether the dataset assessment can be independently reproduced
+and audited. The evidence package is represented as
+\begin{equation}
+    \mathcal{E}
+    =
+    \left(
+        D_{\mathrm{raw}},
+        H,
+        M_{\mathrm{acq}},
+        \mathcal{T},
+        C_{\mathrm{criteria}},
+        C_{\mathrm{preprocess}},
+        C_{\mathrm{software}},
+        S_{\mathrm{partition}},
+        S_{\mathrm{random}},
+        R_{\mathrm{evidence}}
+    \right),
+\end{equation}
+where $H$ contains integrity hashes, $M_{\mathrm{acq}}$ contains acquisition
+and instrument metadata, the $C$ terms contain configurations and versions,
+the $S$ terms record partitions and random seeds, and
+$R_{\mathrm{evidence}}$ contains the generated criterion results.
+
+Every material input must be uniquely identified. For a file $f$, an integrity
+record may use
+\begin{equation}
+    H_f
+    =
+    \operatorname{SHA256}(f).
+\end{equation}
+Another evaluator using the same evidence package should reproduce the
+criterion outcomes and numerical results within declared numerical tolerance.
+
+D7 is \textsc{Pass} when the raw evidence, provenance, configurations, and
+software state are sufficient to reproduce D0--D6. It is \textsc{Fail} when a
+known loss or undocumented transformation prevents reproduction, and
+\textsc{Indeterminate} when required provenance is unavailable.
+
+\subsection{Overall Decision Semantics}
+
+Each applicable dataset criterion returns one of
+\begin{equation}
+    A_k
+    \in
+    \left\{
+        \textsc{Pass},
+        \textsc{Fail},
+        \textsc{Indeterminate},
+        \textsc{Not Applicable}
+    \right\},
+    \qquad
+    k=1,\ldots,7.
+\end{equation}
+
+If D0 is incomplete, the overall result is \textsc{Indeterminate}. Otherwise,
+for the required criteria, the overall dataset assessment is
+\begin{equation}
+    A(D\mid\mathcal{T})
+    =
+    \begin{cases}
+        \textsc{Fail},
+            & \text{if at least one required criterion fails},\\
+        \textsc{Indeterminate},
+            & \text{if none fails and at least one is indeterminate},\\
+        \textsc{Pass},
+            & \text{if every required criterion passes}.
+    \end{cases}
+\end{equation}
+Every result must retain criterion-level evidence; the overall result is not a
+replacement for the individual conclusions. Calibration acceptance under
+$\mathcal{P}$ is reported separately from dataset adequacy. A criterion may be
+\textsc{Not Applicable} only when the declared task makes its underlying
+obligation irrelevant; it is then excluded from the overall aggregation.
 
 
 
@@ -570,6 +781,20 @@ mounting, using only its three sensing coils. The calibration task is
     where $u_0$ is the individual sensor being calibrated.
 \end{itemize}
 
+\subsubsection{Application of D0}
+
+The first task currently defines the three coil inputs, three reference-force
+outputs, affine model family, rigid mounting condition, and generalization to
+new runs of the same sensor. Its remaining declarations are:
+\begin{itemize}
+    \item the numerical limits of $\Omega_1$;
+    \item the temperature and loading-rate ranges; and
+    \item the performance and uncertainty thresholds.
+\end{itemize}
+Until these values and their sources are declared, D0 and the affected D2,
+D4, and D6 assessments remain \textsc{Indeterminate}. The missing values must
+not be inferred from the dataset being assessed.
+
 \subsubsection{Application of D1}
 
 For the first application, each calibration observation must contain the three
@@ -710,9 +935,24 @@ The first dataset satisfies D2 when
     h_{\max,1}.
 \end{equation}
 
+The declared operating conditions must also be supported. Let
+\begin{equation}
+    \mathcal{S}_{\mathcal{C}_1}
+    =
+    \left\{
+        \mathbf{z}_i
+        :
+        i\in\mathcal{I}_{\mathrm{valid}}
+    \right\}.
+\end{equation}
+For a condition held fixed, such as rigid mounting,
+$\mathcal{C}_{\mathrm{mount},1}$ is a singleton. Any claimed temperature or
+loading-rate range must be represented by
+$\mathcal{S}_{\mathcal{C}_1}$ or explicitly excluded from the first claim.
+
 The force limits, evaluation-grid resolution, and maximum acceptable fill
-distance $h_{\max,1}$ must be declared before assessing the collected
-trajectories.
+distance $h_{\max,1}$, together with the claimed condition ranges, must be
+declared before assessing the collected trajectories.
 \subsubsection{Application of D3}
 
 For the first application, the declared model is the affine calibration
@@ -1062,6 +1302,24 @@ The affine calibration satisfies the initial RMSE requirement when
     j\in\{x,y,z\}.
 \end{equation}
 
+To detect local failure hidden by a global RMSE, the same metrics are reported
+over predeclared regions
+$\{\mathcal{B}_{1,b}\}_{b=1}^{B_1}$ of the supported force and condition
+domain:
+\begin{equation}
+    \operatorname{RMSE}_{j,b}
+    =
+    \sqrt{
+        \frac{1}{N_b}
+        \sum_{
+            i\in D_{\mathrm{test}}
+            :
+            (\mathbf{q}_i,\mathbf{z}_i)\in\mathcal{B}_{1,b}
+        }
+        e_{i,j}^{2}
+    }.
+\end{equation}
+
 The calibrated-force uncertainty $U_j$ must also be estimated using a declared
 uncertainty model and satisfy
 \begin{equation}
@@ -1072,4 +1330,25 @@ uncertainty model and satisfy
 The confidence level, number of bootstrap repetitions, maximum interval
 half-widths, RMSE thresholds, and uncertainty-estimation method remain to be
 declared.
+
+\subsubsection{Application of D7}
+
+For the first application, the reproducibility package must contain:
+\begin{itemize}
+    \item the immutable raw coil, reference F/T, timestamp, and run metadata;
+    \item a SHA-256 manifest for every raw and configuration file;
+    \item the sensor, reference instrument, rig, and acquisition profiles;
+    \item the declared task $\mathcal{T}_1$ and all D1--D6 parameters;
+    \item the preprocessing operations and excluded-sample records;
+    \item the development and test run identifiers;
+    \item the software version, source-control commit, dependencies, and random
+        seeds; and
+    \item the generated criterion metrics, outcomes, and diagnostic figures.
+\end{itemize}
+
+Let $\mathcal{E}_1$ denote this evidence package. The first application
+satisfies D7 when an independent execution using $\mathcal{E}_1$ reproduces
+the D1--D6 outcomes and numerical results within the declared numerical
+tolerances. Missing raw data, unresolved file-integrity changes, or
+undocumented preprocessing make the assessment non-reproducible.
 \end{document}
