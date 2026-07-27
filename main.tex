@@ -305,6 +305,66 @@ test units satisfies
     G_{\mathrm{test}}^{\min}.
 \end{equation}
 
+\subsection{Criterion D6: Performance Evaluation and Uncertainty}
+
+This criterion determines whether the independent test data allow calibration
+performance and uncertainty to be estimated precisely enough for comparison
+with the declared requirements $\mathcal{P}$.
+
+For each test sample $i$, the calibration error is
+\begin{equation}
+    \mathbf{e}_i
+    =
+    \widehat{\mathbf{q}}_i-\mathbf{q}_i.
+\end{equation}
+
+Let $m_\ell$ be a required performance metric. Its estimate on the independent
+test data is
+\begin{equation}
+    \widehat{m}_\ell
+    =
+    m_\ell(D_{\mathrm{test}}).
+\end{equation}
+
+The uncertainty of the metric is represented by a confidence interval
+\begin{equation}
+    CI_\ell
+    =
+    \left[
+        m_\ell^{-},
+        m_\ell^{+}
+    \right],
+\end{equation}
+with half-width
+\begin{equation}
+    w_\ell
+    =
+    \frac{
+        m_\ell^{+}-m_\ell^{-}
+    }{2}.
+\end{equation}
+
+The dataset provides sufficiently precise performance evidence when
+\begin{equation}
+    w_\ell
+    \leq
+    w_\ell^{\max},
+\end{equation}
+where $w_\ell^{\max}$ is the maximum acceptable uncertainty in the reported
+metric.
+
+For a metric where smaller values indicate better performance, the calibrated
+model satisfies the corresponding requirement when
+\begin{equation}
+    m_\ell^{+}
+    \leq
+    \tau_\ell,
+\end{equation}
+where $\tau_\ell$ is the declared acceptance threshold. Dataset adequacy and
+calibration acceptance are reported separately: a sufficiently precise result
+showing that the model fails a requirement does not make the dataset
+inadequate.
+
 
 
 
@@ -925,4 +985,91 @@ The first application satisfies D5 when
 \end{equation}
 and the test runs have not been used for preprocessing, model selection,
 parameter estimation, or threshold selection.
+
+\subsubsection{Application of D6}
+
+For the first application, performance is evaluated separately for each force
+axis using the held-out runs defined by D5. The test error is
+\begin{equation}
+    e_{i,j}
+    =
+    \widehat{q}_{i,j}-q_{i,j},
+    \qquad
+    j\in\{x,y,z\}.
+\end{equation}
+
+The estimated per-axis performance is
+\begin{equation}
+    \widehat{\operatorname{RMSE}}_{j,\mathrm{test}}
+    =
+    \sqrt{
+        \frac{1}{N_{\mathrm{test}}}
+        \sum_{i\in D_{\mathrm{test}}}
+        e_{i,j}^{2}
+    }.
+\end{equation}
+
+Because samples within a run are correlated, confidence intervals are
+estimated by resampling complete test runs rather than individual samples.
+For bootstrap repetitions $b=1,\ldots,B$, let
+$\widehat{\operatorname{RMSE}}_{j}^{(b)}$ be the metric calculated after
+resampling the runs in $\mathcal{R}_{\mathrm{test}}$. A
+$(1-\alpha)$ confidence interval is
+\begin{equation}
+    CI_{j,1-\alpha}
+    =
+    \left[
+        Q_{\alpha/2}
+        \left(
+            \left\{
+                \widehat{\operatorname{RMSE}}_{j}^{(b)}
+            \right\}_{b=1}^{B}
+        \right),
+        Q_{1-\alpha/2}
+        \left(
+            \left\{
+                \widehat{\operatorname{RMSE}}_{j}^{(b)}
+            \right\}_{b=1}^{B}
+        \right)
+    \right],
+\end{equation}
+where $Q_p$ denotes the empirical $p$-quantile. Let
+$\operatorname{RMSE}_{j}^{-}$ and $\operatorname{RMSE}_{j}^{+}$ denote the
+lower and upper bounds of this interval. Its half-width is
+\begin{equation}
+    w_j
+    =
+    \frac{
+        \operatorname{RMSE}_{j}^{+}
+        -
+        \operatorname{RMSE}_{j}^{-}
+    }{2}.
+\end{equation}
+
+The first dataset provides sufficiently precise performance evidence when
+\begin{equation}
+    w_j\leq w_j^{\max},
+    \qquad
+    j\in\{x,y,z\}.
+\end{equation}
+
+The affine calibration satisfies the initial RMSE requirement when
+\begin{equation}
+    \operatorname{RMSE}_{j}^{+}
+    \leq
+    \varepsilon_j,
+    \qquad
+    j\in\{x,y,z\}.
+\end{equation}
+
+The calibrated-force uncertainty $U_j$ must also be estimated using a declared
+uncertainty model and satisfy
+\begin{equation}
+    U_j\leq U_j^{\max},
+    \qquad
+    j\in\{x,y,z\}.
+\end{equation}
+The confidence level, number of bootstrap repetitions, maximum interval
+half-widths, RMSE thresholds, and uncertainty-estimation method remain to be
+declared.
 \end{document}
