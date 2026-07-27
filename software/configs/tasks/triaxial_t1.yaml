@@ -7,6 +7,8 @@ profiles:
 dataset_mapping:
   sensor_timestamp_column: sensor_time_s
   reference_timestamp_column: reference_time_s
+  run_id_column: null
+  configuration_id_column: null
   sensor_channels:
     c1: c1
     c2: c2
@@ -21,4 +23,83 @@ d1:
     Fy: null
     Fz: null
   require_reference_certificate: true
-
+d2:
+  axes:
+    - Fx
+    - Fy
+    - Fz
+  domain:
+    Fx:
+      minimum: null
+      maximum: null
+      grid_points: null
+    Fy:
+      minimum: null
+      maximum: null
+      grid_points: null
+    Fz:
+      minimum: null
+      maximum: null
+      grid_points: null
+  maximum_fill_distance: null
+d3:
+  model_type: affine
+  input_channels:
+    - c1
+    - c2
+    - c3
+  output_dimension: 3
+  normalization:
+    c1:
+      minimum: null
+      maximum: null
+    c2:
+      minimum: null
+      maximum: null
+    c3:
+      minimum: null
+      maximum: null
+  relative_rank_tolerance: null
+  maximum_condition_number: null
+d4:
+  signals:
+    - source: sensor
+      channel: c1
+      maximum_autocorrelation_lag: null
+    - source: sensor
+      channel: c2
+      maximum_autocorrelation_lag: null
+    - source: sensor
+      channel: c3
+      maximum_autocorrelation_lag: null
+    - source: reference
+      channel: Fx
+      maximum_autocorrelation_lag: null
+    - source: reference
+      channel: Fy
+      maximum_autocorrelation_lag: null
+    - source: reference
+      channel: Fz
+      maximum_autocorrelation_lag: null
+  minimum_independent_runs: null
+  minimum_runs_per_configuration: null
+  minimum_effective_sample_size: null
+  initialization_procedure_id: null
+  zeroing_procedure_id: null
+  run_evidence: null
+d5:
+  validation_unit: run
+  model_source: task.d3
+  development_units: null
+  test_units: null
+  minimum_test_units: null
+  split_manifest_id: null
+  split_frozen_before_development: null
+  data_use:
+    data_dependent_preprocessing: null
+    model_selection: null
+    parameter_estimation: null
+    performance_threshold_selection: null
+    final_performance_evaluation: null
+    model_locked_before_test_evaluation: null
+    test_results_used_for_further_development: null

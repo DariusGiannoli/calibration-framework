@@ -31,6 +31,38 @@ calibration-adequacy evaluate-d1 \
   --dataset software/examples/d1/synthetic_demo/data.csv
 ```
 
+## Evaluate the synthetic D2 example
+
+```bash
+calibration-adequacy evaluate-d2 \
+  --task software/examples/d2/synthetic_demo/task.yaml \
+  --dataset software/examples/d2/synthetic_demo/data.csv
+```
+
+## Evaluate the synthetic D3 example
+
+```bash
+calibration-adequacy evaluate-d3 \
+  --task software/examples/d3/synthetic_demo/task.yaml \
+  --dataset software/examples/d3/synthetic_demo/data.csv
+```
+
+## Evaluate the synthetic D4 example
+
+```bash
+calibration-adequacy evaluate-d4 \
+  --task software/examples/d4/synthetic_demo/task.yaml \
+  --dataset software/examples/d4/synthetic_demo/data.csv
+```
+
+## Evaluate the synthetic D5 example
+
+```bash
+calibration-adequacy evaluate-d5 \
+  --task software/examples/d5/synthetic_demo/task.yaml \
+  --dataset software/examples/d5/synthetic_demo/data.csv
+```
+
 Scientific `FAIL` and `INDETERMINATE` results use exit codes 1 and 2,
 respectively. Configuration/schema errors use exit code 3.
 
@@ -42,4 +74,3 @@ calibration-adequacy write-schemas --output-dir reports/schemas
 
 The generated JSON Schemas can drive GUI forms while YAML remains the
 versioned, reproducible configuration format.
-

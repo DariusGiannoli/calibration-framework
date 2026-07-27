@@ -1,0 +1,43 @@
+# Complete synthetic D2 task used for examples and automated tests.
+schema_version: "0.1"
+task_id: synthetic_triaxial_d2
+profiles:
+  sensor: ../../d1/synthetic_demo/sensor.yaml
+  reference: ../../d1/synthetic_demo/reference.yaml
+  setup: ../../d1/synthetic_demo/setup.yaml
+dataset_mapping:
+  sensor_timestamp_column: sensor_time_s
+  reference_timestamp_column: reference_time_s
+  sensor_channels:
+    c1: c1
+    c2: c2
+    c3: c3
+  reference_channels:
+    Fx: Fx_ref
+    Fy: Fy_ref
+    Fz: Fz_ref
+d1:
+  maximum_reference_uncertainty:
+    Fx: 0.05
+    Fy: 0.05
+    Fz: 0.05
+  require_reference_certificate: true
+d2:
+  axes:
+    - Fx
+    - Fy
+    - Fz
+  domain:
+    Fx:
+      minimum: -1.0
+      maximum: 1.0
+      grid_points: 3
+    Fy:
+      minimum: -1.0
+      maximum: 1.0
+      grid_points: 3
+    Fz:
+      minimum: -1.0
+      maximum: 1.0
+      grid_points: 3
+  maximum_fill_distance: 0.01

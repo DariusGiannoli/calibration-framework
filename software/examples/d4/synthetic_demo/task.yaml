@@ -1,0 +1,74 @@
+# Complete synthetic D4 task used for examples and automated tests.
+schema_version: "0.1"
+task_id: synthetic_triaxial_d4
+profiles:
+  sensor: ../../d1/synthetic_demo/sensor.yaml
+  reference: ../../d1/synthetic_demo/reference.yaml
+  setup: ../../d1/synthetic_demo/setup.yaml
+dataset_mapping:
+  sensor_timestamp_column: sensor_time_s
+  reference_timestamp_column: reference_time_s
+  run_id_column: run_id
+  configuration_id_column: configuration_id
+  sensor_channels:
+    c1: c1
+    c2: c2
+    c3: c3
+  reference_channels:
+    Fx: Fx_ref
+    Fy: Fy_ref
+    Fz: Fz_ref
+d1:
+  maximum_reference_uncertainty:
+    Fx: 0.05
+    Fy: 0.05
+    Fz: 0.05
+  require_reference_certificate: true
+d4:
+  signals:
+    - source: sensor
+      channel: c1
+      maximum_autocorrelation_lag: 1
+    - source: sensor
+      channel: c2
+      maximum_autocorrelation_lag: 1
+    - source: sensor
+      channel: c3
+      maximum_autocorrelation_lag: 1
+    - source: reference
+      channel: Fx
+      maximum_autocorrelation_lag: 1
+    - source: reference
+      channel: Fy
+      maximum_autocorrelation_lag: 1
+    - source: reference
+      channel: Fz
+      maximum_autocorrelation_lag: 1
+  minimum_independent_runs: 4
+  minimum_runs_per_configuration:
+    spiral: 2
+    lissajous: 2
+  minimum_effective_sample_size: 12.0
+  initialization_procedure_id: synthetic_initialization_v1
+  zeroing_procedure_id: synthetic_zeroing_v1
+  run_evidence:
+    - run_id: spiral_01
+      acquisition_id: acquisition_01
+      separate_acquisition: true
+      initialization_completed: true
+      zeroing_completed: true
+    - run_id: spiral_02
+      acquisition_id: acquisition_02
+      separate_acquisition: true
+      initialization_completed: true
+      zeroing_completed: true
+    - run_id: lissajous_01
+      acquisition_id: acquisition_03
+      separate_acquisition: true
+      initialization_completed: true
+      zeroing_completed: true
+    - run_id: lissajous_02
+      acquisition_id: acquisition_04
+      separate_acquisition: true
+      initialization_completed: true
+      zeroing_completed: true

@@ -22,15 +22,26 @@ def _dot(left: Sequence[float], right: Sequence[float]) -> float:
     return sum(a * b for a, b in zip(left, right))
 
 
-def _determinant_3x3(matrix: Sequence[Sequence[float]]) -> float:
-    return (
-        matrix[0][0]
-        * (matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1])
-        - matrix[0][1]
-        * (matrix[1][0] * matrix[2][2] - matrix[1][2] * matrix[2][0])
-        + matrix[0][2]
-        * (matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0])
-    )
+def _determinant(matrix: Sequence[Sequence[float]]) -> float:
+    working = [list(row) for row in matrix]
+    determinant = 1.0
+    for column in range(len(working)):
+        pivot = max(
+            range(column, len(working)),
+            key=lambda row: abs(working[row][column]),
+        )
+        if abs(working[pivot][column]) <= ROTATION_TOLERANCE:
+            return 0.0
+        if pivot != column:
+            working[column], working[pivot] = working[pivot], working[column]
+            determinant *= -1.0
+        pivot_value = working[column][column]
+        determinant *= pivot_value
+        for row in range(column + 1, len(working)):
+            factor = working[row][column] / pivot_value
+            for entry in range(column + 1, len(working)):
+                working[row][entry] -= factor * working[column][entry]
+    return determinant
 
 
 def _rotation_is_valid(matrix: Sequence[Sequence[float]]) -> bool:
@@ -39,7 +50,7 @@ def _rotation_is_valid(matrix: Sequence[Sequence[float]]) -> bool:
             expected = 1.0 if row_index == other_index else 0.0
             if abs(_dot(row, other) - expected) > ROTATION_TOLERANCE:
                 return False
-    return abs(_determinant_3x3(matrix) - 1.0) <= ROTATION_TOLERANCE
+    return abs(_determinant(matrix) - 1.0) <= ROTATION_TOLERANCE
 
 
 def _parse_finite(value: Any) -> Optional[float]:
@@ -173,7 +184,7 @@ def evaluate_d1(
     elif not _rotation_is_valid(rotation):
         add_violation(
             "invalid_coordinate_rotation",
-            "reference-to-sensor rotation is not a proper orthonormal 3x3 rotation",
+            "reference-to-sensor rotation is not a proper orthonormal rotation",
             field="reference_to_sensor_rotation",
         )
 
@@ -183,12 +194,15 @@ def evaluate_d1(
         *sensor_mapping.values(),
         *reference_mapping.values(),
     ]
+    run_id_column = task.dataset_mapping.run_id_column
+    if run_id_column is not None:
+        required_columns.append(run_id_column)
 
     rows_evaluated = 0
     invalid_rows = 0
     max_abs_time_offset: Optional[float] = None
-    previous_sensor_time: Optional[float] = None
-    previous_reference_time: Optional[float] = None
+    previous_sensor_time: Dict[str, float] = {}
+    previous_reference_time: Dict[str, float] = {}
 
     try:
         stream = path.open("r", encoding="utf-8", newline="")
@@ -239,6 +253,21 @@ def evaluate_d1(
         for row_number, row in enumerate(reader, start=2):
             rows_evaluated += 1
             row_invalid = False
+            run_scope = "__complete_dataset__"
+            if run_id_column is not None:
+                run_id = (row.get(run_id_column) or "").strip()
+                if not run_id:
+                    row_invalid = True
+                    add_violation(
+                        "invalid_run_id",
+                        "run identifier is missing or empty",
+                        row_number=row_number,
+                        field=run_id_column,
+                        observed=row.get(run_id_column),
+                    )
+                    run_scope = f"__invalid_row_{row_number}__"
+                else:
+                    run_scope = run_id
 
             sensor_time_column = task.dataset_mapping.sensor_timestamp_column
             reference_time_column = task.dataset_mapping.reference_timestamp_column
@@ -266,33 +295,33 @@ def evaluate_d1(
 
             if sensor_time is not None:
                 if (
-                    previous_sensor_time is not None
-                    and sensor_time <= previous_sensor_time
+                    run_scope in previous_sensor_time
+                    and sensor_time <= previous_sensor_time[run_scope]
                 ):
                     row_invalid = True
                     add_violation(
                         "non_monotonic_timestamp",
-                        "sensor timestamps must be strictly increasing",
+                        "sensor timestamps must be strictly increasing within a run",
                         row_number=row_number,
                         field=sensor_time_column,
                         observed=sensor_time,
                     )
-                previous_sensor_time = sensor_time
+                previous_sensor_time[run_scope] = sensor_time
 
             if reference_time is not None:
                 if (
-                    previous_reference_time is not None
-                    and reference_time <= previous_reference_time
+                    run_scope in previous_reference_time
+                    and reference_time <= previous_reference_time[run_scope]
                 ):
                     row_invalid = True
                     add_violation(
                         "non_monotonic_timestamp",
-                        "reference timestamps must be strictly increasing",
+                        "reference timestamps must be strictly increasing within a run",
                         row_number=row_number,
                         field=reference_time_column,
                         observed=reference_time,
                     )
-                previous_reference_time = reference_time
+                previous_reference_time[run_scope] = reference_time
 
             if sensor_time is not None and reference_time is not None:
                 time_offset = abs(sensor_time - reference_time)
