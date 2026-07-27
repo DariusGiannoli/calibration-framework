@@ -189,6 +189,54 @@ The dataset satisfies D3 when
 where $\kappa_{\max}$ is the maximum acceptable condition number after
 appropriate normalization of the model variables.
 
+\subsection{Criterion D4: Independent Replication and Dependence}
+
+This criterion determines whether the dataset contains sufficient independent
+experimental repetitions and whether temporal dependence between samples is
+properly recognized.
+
+Let the dataset be divided into $R$ independent experimental runs:
+\begin{equation}
+    D
+    =
+    \bigcup_{r=1}^{R}D_r,
+\end{equation}
+where $D_r$ contains the observations collected during run $r$.
+
+Samples collected within the same continuous run may be temporally correlated.
+Therefore, the number of recorded samples is not necessarily the number of
+independent observations.
+
+For a relevant signal $v$, the approximate effective sample size is
+\begin{equation}
+    N_{\mathrm{eff},v}
+    =
+    \sum_{r=1}^{R}
+    \frac{N_r}
+    {
+        1
+        +
+        2\sum_{k=1}^{K_v}\rho_{r,v}(k)
+    },
+\end{equation}
+where $N_r$ is the number of samples in run $r$,
+$\rho_{r,v}(k)$ is the lag-$k$ autocorrelation, and $K_v$ is the maximum
+relevant correlation lag.
+
+The dataset satisfies D4 when
+\begin{equation}
+    R\geq R_{\min},
+    \qquad
+    \min_{v\in\mathcal{V}}N_{\mathrm{eff},v}
+    \geq
+    N_{\mathrm{eff}}^{\min},
+\end{equation}
+where $\mathcal{V}$ is the set of signals relevant to the calibration.
+
+The required number of independent runs and minimum effective sample size must
+be declared according to the intended generalization claim and calibration
+model.
+
 
 
 
@@ -644,4 +692,74 @@ The first dataset satisfies D3 for the affine model when
 The numerical rank tolerance and maximum acceptable condition number
 $\kappa_{\max,1}$ must be declared before evaluating the candidate calibration
 trajectories.
+
+\subsubsection{Application of D4}
+
+For the first triaxial calibration, the dataset is divided into independent
+experimental runs:
+\begin{equation}
+    D_1
+    =
+    \bigcup_{r=1}^{R_1}D_{1,r},
+\end{equation}
+where $D_{1,r}$ contains the D1-valid samples collected during run $r$.
+
+An independent run is a separately executed experiment with a new acquisition
+start and the declared initialization and zeroing procedure. Dividing one
+continuous recording into several segments does not create independent runs.
+
+The signals considered when evaluating temporal dependence are
+\begin{equation}
+    \mathcal{V}_1
+    =
+    \left\{
+        c_1,c_2,c_3,
+        F_x^{\mathrm{ref}},
+        F_y^{\mathrm{ref}},
+        F_z^{\mathrm{ref}}
+    \right\}.
+\end{equation}
+
+For each signal $v\in\mathcal{V}_1$, the effective sample size is estimated as
+\begin{equation}
+    N_{\mathrm{eff},v}^{(1)}
+    =
+    \sum_{r=1}^{R_1}
+    \frac{N_r}
+    {
+        1
+        +
+        2\sum_{k=1}^{K_v}\rho_{r,v}(k)
+    },
+\end{equation}
+where $N_r$ is the number of valid samples in run $r$.
+
+If the protocol contains different trajectory configurations indexed by
+$\ell$, the number of independent runs for configuration $\ell$ is
+\begin{equation}
+    R_{1,\ell}
+    =
+    \left|
+        \left\{
+            r :
+            \text{run }r\text{ uses configuration }\ell
+        \right\}
+    \right|.
+\end{equation}
+
+The first dataset satisfies D4 when
+\begin{equation}
+    R_1\geq R_{\min,1},
+    \qquad
+    R_{1,\ell}\geq R_{\min,\ell},
+    \qquad
+    \min_{v\in\mathcal{V}_1}
+    N_{\mathrm{eff},v}^{(1)}
+    \geq
+    N_{\mathrm{eff},1}^{\min}.
+\end{equation}
+
+The minimum number of independent runs, required repetitions per trajectory
+configuration, autocorrelation lag, and minimum effective sample size remain to
+be declared.
 \end{document}
