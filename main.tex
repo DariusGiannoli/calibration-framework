@@ -20,17 +20,6 @@
 
 \newpage
 
-\section{Objective}
-
-The objective is to develop a practical framework for assessing whether a
-planned experiment or a collected dataset is adequate for calibrating a sensor
-for a declared use.
-
-Adequacy is not absolute. It depends on what the sensor must measure, the
-intended operating range and conditions, the calibration method, the required
-performance, and the situations in which the calibrated sensor is expected to
-work.
-
 \section{Central Research Question}
 
 \begin{quote}
@@ -39,7 +28,7 @@ protocol or dataset provides enough appropriate evidence to develop and
 evaluate a viable sensor calibration?
 \end{quote}
 
-\section{Working Definition of Adequacy}
+\section{Definition of Adequacy}
 
 A dataset cannot be considered adequate in isolation. Its adequacy must be
 assessed relative to a declared calibration task:
@@ -73,6 +62,53 @@ For an acquired dataset $D$, adequacy is therefore conditional:
 \begin{equation}
     \operatorname{Adequacy}\left(D \mid \mathcal{T}\right).
 \end{equation}
+
+%==================================================================%
+\section{Universal Criteria}
+
+\subsection{Criterion D1: Measurement and Reference Validity}
+
+The dataset must contain trustworthy pairs of sensor readings and reference
+forces. For each sample $i$,
+\begin{equation}
+    \left(\mathbf{s}_i,\mathbf{q}_i\right)
+    =
+    \left(
+    \begin{bmatrix}
+        c_{1,i} & c_{2,i} & c_{3,i}
+    \end{bmatrix}^{\mathsf{T}},
+    \begin{bmatrix}
+        F_{x,i}^{\mathrm{ref}} &
+        F_{y,i}^{\mathrm{ref}} &
+        F_{z,i}^{\mathrm{ref}}
+    \end{bmatrix}^{\mathsf{T}}
+    \right)
+\end{equation}
+must represent the same physical state.
+
+The measurements are considered valid when:
+\begin{equation}
+    |\Delta t_i| \leq \Delta t_{\max},
+    \qquad
+    \mathbf{s}_i \in \mathcal{S}_{\mathrm{valid}},
+    \qquad
+    \mathbf{q}_i \in \mathcal{Q}_{\mathrm{valid}},
+    \qquad
+    U_{\mathrm{ref}} \leq U_{\mathrm{ref}}^{\max},
+\end{equation}
+where $\Delta t_i$ is the synchronization error,
+$\mathcal{S}_{\mathrm{valid}}$ and $\mathcal{Q}_{\mathrm{valid}}$ are the valid
+measurement ranges, and $U_{\mathrm{ref}}$ is the reference-sensor uncertainty.
+
+The units, axis directions, and coordinate transformation between the
+reference sensor and the triaxial sensor must also be known. If these
+conditions are not satisfied, the input--target pairs cannot be trusted for
+calibration.
+
+
+
+
+%=========================================================%
 
 \newpage
 \section{Triaxial Force Sensor}
