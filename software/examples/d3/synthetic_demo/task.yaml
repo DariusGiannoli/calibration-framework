@@ -22,6 +22,11 @@ d1:
     Fy: 0.05
     Fz: 0.05
   require_reference_certificate: true
+  require_acquisition_bandwidth: true
+  require_sampling_process: true
+  invalid_observation_policy_id: synthetic_retain_valid_rows_v1
+  exclusion_record_id: synthetic_no_exclusions_v1
+  exclusions_reviewed: true
 d3:
   model_type: affine
   input_channels:
@@ -41,3 +46,6 @@ d3:
       maximum: 1.0
   relative_rank_tolerance: 1.0e-12
   maximum_condition_number: 2.0
+  model_specific_test_id: affine_rank_condition_v1
+  confounding_review_id: synthetic_fixed_conditions_review_v1
+  condition_handling: held_fixed

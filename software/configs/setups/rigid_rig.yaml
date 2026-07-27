@@ -1,5 +1,7 @@
 schema_version: "0.1"
 setup_id: rigid_rig
 maximum_time_offset_s: null
+sensor_acquisition_bandwidth_hz: null
+reference_acquisition_bandwidth_hz: null
+sampling_process_id: null
 reference_to_sensor_rotation: null
-

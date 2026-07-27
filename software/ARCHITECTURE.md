@@ -34,7 +34,8 @@ second copy of the criterion logic.
 | Sensor profile | channel units and valid hardware ranges | observed dataset minima/maxima |
 | Reference profile | valid ranges, actual uncertainty, certificate evidence | application acceptance limits |
 | Setup profile | synchronization tolerance and frame transformation | dataset observations |
-| Task profile | column mappings and criterion-specific application requirements | inferred hardware specifications or observed dataset extrema |
+| Task profile | calibration claim, applicability, column mappings, and criterion-specific requirements | inferred hardware specifications or observed dataset extrema |
+| Evidence manifest | file roles, SHA-256 records, versions, seeds, and recorded results | undocumented files or mutable identifiers |
 
 Unknown scientific values are represented explicitly as `null`. Missing values
 produce an `INDETERMINATE` result; the engine never invents defaults.
@@ -44,9 +45,20 @@ produce an `INDETERMINATE` result; the engine never invents defaults.
 - `PASS`: all required evidence is present and no violation was detected.
 - `FAIL`: at least one observed or configured value violates a declared rule.
 - `INDETERMINATE`: no violation is known, but required evidence is missing.
+- `NOT_APPLICABLE`: the task explicitly makes the underlying obligation
+  irrelevant and records a justification.
 
 A known failure takes precedence over missing evidence. Configuration syntax or
 schema errors are execution errors rather than scientific criterion results.
+
+## D0 implementation
+
+D0 checks that the executable task explicitly and consistently declares the
+sensor inputs, reference outputs, force domain, operating conditions, model
+family, performance requirements, and generalization unit. It cross-checks the
+claim against D2, D3, D4, D5, and D6 rather than accepting free-text
+declarations. Missing claim elements produce `INDETERMINATE`; contradictory
+declarations produce `FAIL`.
 
 ## D1 implementation
 
@@ -56,6 +68,9 @@ D1 checks:
 - timestamp ordering and sensor/reference synchronization;
 - sensor and reference valid ranges;
 - existence and validity of the reference-to-sensor rotation;
+- acquisition bandwidth and sampling-process declarations when required;
+- an identified invalid-observation policy and exclusion record;
+- confirmation that exclusions were reviewed;
 - actual reference uncertainty against task-specific maximum uncertainty;
 - reference calibration evidence.
 
@@ -66,18 +81,23 @@ avoids introducing an arbitrary allowable-invalid-sample percentage.
 
 ## D2 implementation
 
-D2 uses the achieved reference measurements from a D1-valid dataset. It:
+D2 uses achieved reference measurements and recorded operating conditions from
+a D1-valid dataset. It:
 
 - requires D1 to return `PASS`;
-- requires declared bounds and grid resolution for every domain axis;
+- requires declared bounds and grid resolution for every continuous force or
+  condition dimension;
+- evaluates categorical and fixed conditions as joint strata;
 - applies the configured reference-to-sensor rotation;
-- normalizes each axis by its declared domain width;
-- evaluates the nearest achieved point at every Cartesian grid point;
+- normalizes the complete continuous \(\Omega\times\mathcal{C}\) domain;
+- evaluates the nearest achieved point inside each claimed stratum;
+- removes only predeclared, justified excluded regions from the claim;
 - reports the estimated fill distance and worst-covered domain point; and
 - compares the estimate with the declared maximum fill distance.
 
-D2 never infers the intended domain, grid resolution, or acceptance threshold
-from the observed data. Missing declarations produce `INDETERMINATE`.
+D2 never infers the intended domain, conditions, exclusions, grid resolution,
+or acceptance threshold from observed data. Missing declarations produce
+`INDETERMINATE`.
 The report also includes the normalized grid covering radius so the grid
 approximation can be assessed and refined explicitly.
 
@@ -91,6 +111,9 @@ parametric model with acceptable numerical conditioning. It:
 - constructs the model sensitivity/design matrix;
 - computes singular values, numerical rank, and condition number;
 - checks full parameter rank and the declared condition-number limit; and
+- requires identifiers for the model-specific test and confounding review;
+- records whether conditions were held fixed, modeled, or demonstrated
+  invariant; and
 - reports the weakest feature direction to help diagnose confounding.
 
 The first model adapter implements the affine calibration defined in the paper.
@@ -104,6 +127,8 @@ D4 evaluates independent replication and within-run temporal dependence. It:
 
 - requires D1 to return `PASS`;
 - identifies runs and trajectory configurations using declared CSV columns;
+- requires a declared dependence method and stationarity review for the
+  initial autocorrelation-based effective-sample-size estimator;
 - requires auditable evidence that every run has a unique acquisition start
   and completed initialization and zeroing procedures;
 - checks the total independent-run and per-configuration repetition limits;
@@ -135,6 +160,7 @@ initial application uses the complete experimental run as that unit. It:
 - checks provenance declarations for preprocessing, model selection, parameter
   estimation, performance-threshold selection, model locking, and final test
   evaluation;
+- records the development-data selection or group-aware resampling method;
 - fits the affine model declared by D3 using development-run samples only; and
 - reports per-axis RMSE using held-out-run samples only.
 
@@ -160,6 +186,8 @@ requirements. It:
 - fits on development runs once and never refits during bootstrap;
 - resamples complete held-out runs with replacement using a declared seed;
 - calculates percentile confidence intervals for per-axis held-out RMSE;
+- repeats the same run-level bootstrap within predeclared force-condition
+  regions to expose local failure hidden by global metrics;
 - compares interval half-widths with the declared precision limits; and
 - compares confidence-interval upper bounds and calibrated-force uncertainty
   estimates with their separate acceptance limits.
@@ -180,3 +208,28 @@ per-axis uncertainty estimates, then checks those estimates against the
 application limits. A future uncertainty-model adapter can calculate these
 quantities without changing the separation between evidence precision and
 calibration acceptance.
+
+## D7 implementation
+
+D7 reads the task-declared evidence manifest and:
+
+- verifies every declared file against its SHA-256 record;
+- binds the dataset, task, instrument/setup profiles, and recorded criterion
+  results used by the evaluator to their exact manifest entries and roles;
+- checks that the task-required evidence roles are present;
+- checks the D6 random seed against the task;
+- reruns the required D0--D6 criteria; and
+- compares recorded outcomes and numerical metrics using declared absolute and
+  relative tolerances.
+
+Missing provenance is `INDETERMINATE`. A missing file, hash mismatch, seed
+mismatch, or non-reproduced result is `FAIL`.
+
+## Overall assessment
+
+`evaluate-all` retains every criterion report and aggregates only applicable
+criteria. D0 incompleteness forces an overall `INDETERMINATE`. Otherwise,
+`FAIL` takes precedence over `INDETERMINATE`, and `PASS` requires every
+applicable criterion to pass. `NOT_APPLICABLE` criteria are excluded only when
+the task contains a reason. D6 calibration acceptance is carried separately
+from the overall dataset-adequacy status.

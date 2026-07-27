@@ -168,6 +168,54 @@ class D1MeasurementReferenceTests(unittest.TestCase):
             result.metrics["violations_by_code"],
         )
 
+    def test_missing_exclusion_policy_is_indeterminate(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        copied_demo = Path(temporary_directory.name) / "demo"
+        shutil.copytree(SYNTHETIC_DEMO, copied_demo)
+        task_path = copied_demo / "task.yaml"
+        task = yaml.safe_load(task_path.read_text(encoding="utf-8"))
+        task["d1"]["invalid_observation_policy_id"] = None
+        task_path.write_text(
+            yaml.safe_dump(task, sort_keys=False),
+            encoding="utf-8",
+        )
+
+        result = self.evaluate_synthetic(
+            dataset_path=copied_demo / "data.csv",
+            task_path=task_path,
+        )
+
+        self.assertEqual(result.status, CriterionStatus.INDETERMINATE)
+        self.assertIn(
+            "task.d1.invalid_observation_policy_id",
+            result.missing_evidence,
+        )
+
+    def test_unreviewed_exclusions_fail(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        copied_demo = Path(temporary_directory.name) / "demo"
+        shutil.copytree(SYNTHETIC_DEMO, copied_demo)
+        task_path = copied_demo / "task.yaml"
+        task = yaml.safe_load(task_path.read_text(encoding="utf-8"))
+        task["d1"]["exclusions_reviewed"] = False
+        task_path.write_text(
+            yaml.safe_dump(task, sort_keys=False),
+            encoding="utf-8",
+        )
+
+        result = self.evaluate_synthetic(
+            dataset_path=copied_demo / "data.csv",
+            task_path=task_path,
+        )
+
+        self.assertEqual(result.status, CriterionStatus.FAIL)
+        self.assertIn(
+            "exclusions_not_reviewed",
+            result.metrics["violations_by_code"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

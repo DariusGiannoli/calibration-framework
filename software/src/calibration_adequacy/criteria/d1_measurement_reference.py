@@ -89,6 +89,8 @@ def evaluate_d1(
         "sensor_profile_id": bundle.sensor.instrument_id,
         "reference_profile_id": bundle.reference.instrument_id,
         "setup_profile_id": bundle.setup.setup_id,
+        "invalid_observation_policy_id": task.d1.invalid_observation_policy_id,
+        "exclusion_record_id": task.d1.exclusion_record_id,
     }
     missing_evidence: List[str] = []
     violations: List[Violation] = []
@@ -174,9 +176,35 @@ def evaluate_d1(
     ):
         missing_evidence.append("reference_profile.calibration_certificate_id")
 
+    if task.d1.invalid_observation_policy_id is None:
+        missing_evidence.append("task.d1.invalid_observation_policy_id")
+    if task.d1.exclusion_record_id is None:
+        missing_evidence.append("task.d1.exclusion_record_id")
+    if task.d1.exclusions_reviewed is None:
+        missing_evidence.append("task.d1.exclusions_reviewed")
+    elif not task.d1.exclusions_reviewed:
+        add_violation(
+            "exclusions_not_reviewed",
+            "the retained dataset exclusions have not been reviewed",
+            field="exclusions_reviewed",
+            observed=False,
+            expected="true",
+        )
+
     maximum_time_offset = bundle.setup.maximum_time_offset_s
     if maximum_time_offset is None:
         missing_evidence.append("setup.maximum_time_offset_s")
+
+    if task.d1.require_acquisition_bandwidth:
+        if bundle.setup.sensor_acquisition_bandwidth_hz is None:
+            missing_evidence.append("setup.sensor_acquisition_bandwidth_hz")
+        if bundle.setup.reference_acquisition_bandwidth_hz is None:
+            missing_evidence.append("setup.reference_acquisition_bandwidth_hz")
+    if (
+        task.d1.require_sampling_process
+        and bundle.setup.sampling_process_id is None
+    ):
+        missing_evidence.append("setup.sampling_process_id")
 
     rotation = bundle.setup.reference_to_sensor_rotation
     if rotation is None:

@@ -71,6 +71,10 @@ class D6PerformanceUncertaintyTests(unittest.TestCase):
         self.assertEqual(result.metrics["bootstrap_unit"], "run")
         self.assertEqual(result.metrics["test_unit_count"], 4)
         self.assertEqual(result.metrics["test_sample_count"], 32)
+        self.assertEqual(set(result.metrics["regions"]), {
+            "negative_Fx",
+            "nonnegative_Fx",
+        })
         for axis in result.metrics["axes"].values():
             self.assertTrue(axis["performance_evidence_precise"])
             self.assertTrue(axis["calibration_axis_accepted"])
@@ -96,7 +100,7 @@ class D6PerformanceUncertaintyTests(unittest.TestCase):
         rows, fieldnames = self.read_demo_rows()
         for row in rows:
             if row["run_id"].startswith("test_"):
-                for channel in ("Fx_ref", "Fy_ref", "Fz_ref"):
+                for channel in ("c1", "c2", "c3"):
                     row[channel] = str(float(row[channel]) + 1.0)
         dataset = self.write_rows(rows, fieldnames)
 
@@ -193,6 +197,26 @@ class D6PerformanceUncertaintyTests(unittest.TestCase):
 
         self.assertEqual(result.status, CriterionStatus.INDETERMINATE)
         self.assertIn("task.d6", result.missing_evidence)
+
+    def test_region_with_too_few_supporting_runs_fails(self):
+        def move_region_outside_test_domain(task):
+            task["d6"]["regions"][0]["dimensions"]["Fx"] = {
+                "minimum": 10.0
+            }
+
+        copied_examples, task_path = self.modify_task(
+            move_region_outside_test_domain
+        )
+        result = self.evaluate(
+            dataset_path=copied_examples / "d6/synthetic_demo/data.csv",
+            task_path=task_path,
+        )
+
+        self.assertEqual(result.status, CriterionStatus.FAIL)
+        self.assertIn(
+            "insufficient_regional_test_units",
+            result.metrics["violations_by_code"],
+        )
 
 
 if __name__ == "__main__":

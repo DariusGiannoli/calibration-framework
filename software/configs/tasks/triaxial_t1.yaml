@@ -17,12 +17,55 @@ dataset_mapping:
     Fx: Fx_ref
     Fy: Fy_ref
     Fz: Fz_ref
+claim:
+  sensor_inputs:
+    - c1
+    - c2
+    - c3
+  reference_outputs:
+    - Fx
+    - Fy
+    - Fz
+  operating_domain:
+    - Fx
+    - Fy
+    - Fz
+  operating_conditions:
+    - mounting
+    - temperature
+    - loading_rate
+  model_family: affine
+  performance_metrics:
+    - rmse
+    - calibrated_force_uncertainty
+  generalization:
+    target_description: new runs of the same physical sensor
+    independent_unit: run
+    sensor_scope: same_sensor
+    operating_conditions:
+      - mounting
+      - temperature
+      - loading_rate
+assessment:
+  criteria:
+    D1: {applicable: true}
+    D2: {applicable: true}
+    D3: {applicable: true}
+    D4: {applicable: true}
+    D5: {applicable: true}
+    D6: {applicable: true}
+    D7: {applicable: true}
 d1:
   maximum_reference_uncertainty:
     Fx: null
     Fy: null
     Fz: null
   require_reference_certificate: true
+  require_acquisition_bandwidth: true
+  require_sampling_process: true
+  invalid_observation_policy_id: null
+  exclusion_record_id: null
+  exclusions_reviewed: null
 d2:
   axes:
     - Fx
@@ -41,6 +84,29 @@ d2:
       minimum: null
       maximum: null
       grid_points: null
+  conditions:
+    mounting:
+      kind: fixed
+      source: constant
+      constant: rigid
+      claimed_value: rigid
+    temperature:
+      kind: continuous
+      source: column
+      column: temperature_C
+      unit: degC
+      minimum: null
+      maximum: null
+      grid_points: null
+    loading_rate:
+      kind: continuous
+      source: column
+      column: loading_rate_N_per_s
+      unit: N/s
+      minimum: null
+      maximum: null
+      grid_points: null
+  excluded_regions: null
   maximum_fill_distance: null
 d3:
   model_type: affine
@@ -61,7 +127,13 @@ d3:
       maximum: null
   relative_rank_tolerance: null
   maximum_condition_number: null
+  model_specific_test_id: affine_rank_condition_v1
+  confounding_review_id: null
+  condition_handling: null
 d4:
+  independent_unit: run
+  dependence_method_id: fixed_lag_autocorrelation_ess_v1
+  stationarity_reviewed: null
   signals:
     - source: sensor
       channel: c1
@@ -95,6 +167,7 @@ d5:
   minimum_test_units: null
   split_manifest_id: null
   split_frozen_before_development: null
+  development_selection_method_id: null
   data_use:
     data_dependent_preprocessing: null
     model_selection: null
@@ -127,3 +200,30 @@ d6:
       maximum_rmse: null
       calibrated_force_uncertainty: null
       maximum_calibrated_force_uncertainty: null
+  regions: null
+d7:
+  evidence_manifest_path: null
+  evidence_package_id: null
+  required_file_roles:
+    - raw_data
+    - acquisition_metadata
+    - task_config
+    - sensor_profile
+    - reference_profile
+    - setup_profile
+    - preprocessing_config
+    - exclusion_record
+    - partition_manifest
+    - dependency_lock
+    - criterion_result
+    - diagnostic_figure
+  required_criterion_results:
+    - D0
+    - D1
+    - D2
+    - D3
+    - D4
+    - D5
+    - D6
+  numerical_absolute_tolerance: null
+  numerical_relative_tolerance: null

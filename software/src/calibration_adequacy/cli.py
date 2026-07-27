@@ -10,16 +10,21 @@ from pydantic import BaseModel
 
 from .config import ConfigurationError, load_task_bundle
 from .criteria import (
+    evaluate_all,
+    evaluate_d0,
     evaluate_d1,
     evaluate_d2,
     evaluate_d3,
     evaluate_d4,
     evaluate_d5,
     evaluate_d6,
+    evaluate_d7,
 )
 from .models import (
     CriterionStatus,
+    EvidenceManifest,
     InstrumentProfile,
+    OverallAssessmentResult,
     SetupProfile,
     TaskConfig,
 )
@@ -28,7 +33,9 @@ from .models import (
 def _write_schemas(output_directory: Path) -> int:
     output_directory.mkdir(parents=True, exist_ok=True)
     models: Dict[str, Type[BaseModel]] = {
+        "evidence-manifest.schema.json": EvidenceManifest,
         "instrument-profile.schema.json": InstrumentProfile,
+        "overall-assessment.schema.json": OverallAssessmentResult,
         "setup-profile.schema.json": SetupProfile,
         "task.schema.json": TaskConfig,
     }
@@ -40,6 +47,12 @@ def _write_schemas(output_directory: Path) -> int:
         )
     print(f"schemas written to {output_directory}")
     return 0
+
+
+def _evaluate_d0(arguments: argparse.Namespace) -> int:
+    bundle = load_task_bundle(arguments.task)
+    result = evaluate_d0(bundle)
+    return _render_result(result, arguments.output, "D0")
 
 
 def _evaluate_d1(arguments: argparse.Namespace) -> int:
@@ -162,12 +175,62 @@ def _evaluate_d6(arguments: argparse.Namespace) -> int:
     }[result.status]
 
 
+def _evaluate_d7(arguments: argparse.Namespace) -> int:
+    bundle = load_task_bundle(arguments.task)
+    result = evaluate_d7(arguments.dataset, bundle)
+    return _render_result(result, arguments.output, "D7")
+
+
+def _evaluate_all(arguments: argparse.Namespace) -> int:
+    bundle = load_task_bundle(arguments.task)
+    result = evaluate_all(arguments.dataset, bundle)
+    rendered = json.dumps(result.model_dump(mode="json"), indent=2) + "\n"
+    if arguments.output:
+        output_path = Path(arguments.output).expanduser().resolve()
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(rendered, encoding="utf-8")
+        print(f"overall evidence report: {output_path}")
+    else:
+        print(rendered, end="")
+    return {
+        CriterionStatus.PASS: 0,
+        CriterionStatus.FAIL: 1,
+        CriterionStatus.INDETERMINATE: 2,
+        CriterionStatus.NOT_APPLICABLE: 0,
+    }[result.status]
+
+
+def _render_result(result, output: str, label: str) -> int:
+    rendered = json.dumps(result.model_dump(mode="json"), indent=2) + "\n"
+    if output:
+        output_path = Path(output).expanduser().resolve()
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(rendered, encoding="utf-8")
+        print(f"{label} evidence report: {output_path}")
+    else:
+        print(rendered, end="")
+    return {
+        CriterionStatus.PASS: 0,
+        CriterionStatus.FAIL: 1,
+        CriterionStatus.INDETERMINATE: 2,
+        CriterionStatus.NOT_APPLICABLE: 0,
+    }[result.status]
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="calibration-adequacy",
         description="Evaluate calibration dataset adequacy criteria.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    d0_parser = subparsers.add_parser(
+        "evaluate-d0",
+        help="Evaluate D0 calibration claim completeness.",
+    )
+    d0_parser.add_argument("--task", required=True, help="Path to task YAML.")
+    d0_parser.add_argument("--output", help="Optional JSON evidence-report path.")
+    d0_parser.set_defaults(handler=_evaluate_d0)
 
     d1_parser = subparsers.add_parser(
         "evaluate-d1",
@@ -222,6 +285,24 @@ def build_parser() -> argparse.ArgumentParser:
     d6_parser.add_argument("--dataset", required=True, help="Path to dataset CSV.")
     d6_parser.add_argument("--output", help="Optional JSON evidence-report path.")
     d6_parser.set_defaults(handler=_evaluate_d6)
+
+    d7_parser = subparsers.add_parser(
+        "evaluate-d7",
+        help="Evaluate D7 reproducibility and provenance.",
+    )
+    d7_parser.add_argument("--task", required=True, help="Path to task YAML.")
+    d7_parser.add_argument("--dataset", required=True, help="Path to dataset CSV.")
+    d7_parser.add_argument("--output", help="Optional JSON evidence-report path.")
+    d7_parser.set_defaults(handler=_evaluate_d7)
+
+    all_parser = subparsers.add_parser(
+        "evaluate-all",
+        help="Evaluate D0-D7 and aggregate the declared applicable criteria.",
+    )
+    all_parser.add_argument("--task", required=True, help="Path to task YAML.")
+    all_parser.add_argument("--dataset", required=True, help="Path to dataset CSV.")
+    all_parser.add_argument("--output", help="Optional JSON evidence-report path.")
+    all_parser.set_defaults(handler=_evaluate_all)
 
     schema_parser = subparsers.add_parser(
         "write-schemas",

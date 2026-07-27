@@ -64,6 +64,12 @@ def _missing_d3_evidence(bundle: TaskBundle) -> List[str]:
         missing.append("task.d3.relative_rank_tolerance")
     if requirements.maximum_condition_number is None:
         missing.append("task.d3.maximum_condition_number")
+    if requirements.model_specific_test_id is None:
+        missing.append("task.d3.model_specific_test_id")
+    if requirements.confounding_review_id is None:
+        missing.append("task.d3.confounding_review_id")
+    if requirements.condition_handling is None:
+        missing.append("task.d3.condition_handling")
     return missing
 
 
@@ -282,6 +288,9 @@ def evaluate_d3(
         ),
         "condition_number_is_infinite": math.isinf(condition_number),
         "maximum_condition_number": maximum_condition_number,
+        "model_specific_test_id": requirements.model_specific_test_id,
+        "confounding_review_id": requirements.confounding_review_id,
+        "condition_handling": requirements.condition_handling,
         "weakest_feature_direction": weakest_direction,
         "normalized_achieved_minimum": normalized_minimum,
         "normalized_achieved_maximum": normalized_maximum,

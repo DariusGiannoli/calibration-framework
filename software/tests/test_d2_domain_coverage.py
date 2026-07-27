@@ -151,6 +151,91 @@ class D2DomainCoverageTests(unittest.TestCase):
         self.assertAlmostEqual(result.metrics["achieved_minimum"]["Fy"], 1.0)
         self.assertAlmostEqual(result.metrics["achieved_minimum"]["Fz"], 0.0)
 
+    def test_joint_categorical_condition_strata_are_evaluated(self):
+        copied_demo = self.temporary_demo_copy()
+        task_path = copied_demo / "task.yaml"
+        task = yaml.safe_load(task_path.read_text(encoding="utf-8"))
+        task["d2"]["conditions"] = {
+            "temperature_band": {
+                "kind": "categorical",
+                "source": "column",
+                "column": "temperature_band",
+                "categories": ["cold", "hot"],
+            }
+        }
+        task_path.write_text(
+            yaml.safe_dump(task, sort_keys=False),
+            encoding="utf-8",
+        )
+        rows, fieldnames = self.read_demo_rows()
+        fieldnames.append("temperature_band")
+        stratified_rows = []
+        for category_index, category in enumerate(("cold", "hot")):
+            for row in rows:
+                copy = dict(row)
+                copy["temperature_band"] = category
+                copy["sensor_time_s"] = str(
+                    float(copy["sensor_time_s"]) + category_index
+                )
+                copy["reference_time_s"] = str(
+                    float(copy["reference_time_s"]) + category_index
+                )
+                stratified_rows.append(copy)
+        dataset = self.write_rows(stratified_rows, fieldnames)
+
+        result = self.evaluate(dataset_path=dataset, task_path=task_path)
+
+        self.assertEqual(result.status, CriterionStatus.PASS)
+        self.assertEqual(len(result.metrics["strata"]), 2)
+        self.assertEqual(result.metrics["grid_point_count"], 54)
+
+    def test_unsupported_condition_stratum_fails_unless_excluded(self):
+        copied_demo = self.temporary_demo_copy()
+        task_path = copied_demo / "task.yaml"
+        task = yaml.safe_load(task_path.read_text(encoding="utf-8"))
+        task["d2"]["conditions"] = {
+            "temperature_band": {
+                "kind": "categorical",
+                "source": "column",
+                "column": "temperature_band",
+                "categories": ["cold", "hot"],
+            }
+        }
+        rows, fieldnames = self.read_demo_rows()
+        fieldnames.append("temperature_band")
+        for row in rows:
+            row["temperature_band"] = "cold"
+        dataset = self.write_rows(rows, fieldnames)
+        task_path.write_text(
+            yaml.safe_dump(task, sort_keys=False),
+            encoding="utf-8",
+        )
+
+        unsupported = self.evaluate(dataset_path=dataset, task_path=task_path)
+        self.assertEqual(unsupported.status, CriterionStatus.FAIL)
+        self.assertTrue(
+            math.isinf(
+                unsupported.metrics["strata"][
+                    "temperature_band=hot"
+                ]["estimated_fill_distance"]
+            )
+        )
+
+        task["d2"]["excluded_regions"] = [
+            {
+                "region_id": "exclude_hot",
+                "reason": "hot operation is outside the calibration claim",
+                "categorical_values": {"temperature_band": ["hot"]},
+            }
+        ]
+        task_path.write_text(
+            yaml.safe_dump(task, sort_keys=False),
+            encoding="utf-8",
+        )
+        excluded = self.evaluate(dataset_path=dataset, task_path=task_path)
+        self.assertEqual(excluded.status, CriterionStatus.PASS)
+        self.assertEqual(excluded.metrics["excluded_grid_point_count"], 27)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -24,6 +24,11 @@ d1:
     Fy: 0.05
     Fz: 0.05
   require_reference_certificate: true
+  require_acquisition_bandwidth: true
+  require_sampling_process: true
+  invalid_observation_policy_id: synthetic_retain_valid_rows_v1
+  exclusion_record_id: synthetic_no_exclusions_v1
+  exclusions_reviewed: true
 d3:
   model_type: affine
   input_channels:
@@ -43,6 +48,9 @@ d3:
       maximum: 1.0
   relative_rank_tolerance: 1.0e-12
   maximum_condition_number: 10.0
+  model_specific_test_id: affine_rank_condition_v1
+  confounding_review_id: synthetic_fixed_conditions_review_v1
+  condition_handling: held_fixed
 d5:
   validation_unit: run
   model_source: task.d3
@@ -55,6 +63,7 @@ d5:
   minimum_test_units: 1
   split_manifest_id: synthetic_run_split_v1
   split_frozen_before_development: true
+  development_selection_method_id: fixed_affine_model_no_selection_v1
   data_use:
     data_dependent_preprocessing: development_only
     model_selection: development_only

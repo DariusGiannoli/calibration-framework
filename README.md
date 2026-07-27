@@ -23,6 +23,13 @@ python -m pip install -e .
 python -m unittest discover -s software/tests -v
 ```
 
+## Evaluate calibration-claim completeness
+
+```bash
+calibration-adequacy evaluate-d0 \
+  --task software/configs/tasks/triaxial_t1.yaml
+```
+
 ## Evaluate the synthetic D1 example
 
 ```bash
@@ -74,6 +81,29 @@ calibration-adequacy evaluate-d6 \
 D6 reports dataset adequacy for performance inference separately from
 calibration acceptance. A precise held-out result may therefore pass D6 while
 showing that the calibrated sensor fails a performance or uncertainty limit.
+
+## Evaluate D7 and the overall assessment
+
+```bash
+calibration-adequacy evaluate-d7 \
+  --task path/to/task.yaml \
+  --dataset path/to/data.csv
+
+calibration-adequacy evaluate-all \
+  --task path/to/task.yaml \
+  --dataset path/to/data.csv \
+  --output reports/overall.json
+```
+
+D7 reads the evidence manifest declared by `task.d7.evidence_manifest_path`,
+verifies SHA-256 records, reruns the declared D0--D6 results, and compares their
+outcomes and numerical metrics within the declared tolerances.
+
+The overall evaluator applies the TeX decision semantics: D0 incompleteness
+makes the assessment indeterminate; otherwise any applicable failure takes
+precedence over indeterminate results. A criterion is excluded only through an
+explicit `NOT_APPLICABLE` declaration with a justification. Calibration
+acceptance remains separate from dataset adequacy.
 
 Scientific `FAIL` and `INDETERMINATE` results use exit codes 1 and 2,
 respectively. Configuration/schema errors use exit code 3.

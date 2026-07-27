@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -81,7 +82,74 @@ def _missing_d6_evidence(bundle: TaskBundle) -> List[str]:
         ):
             if getattr(axis, field_name) is None:
                 missing.append(f"task.d6.axes.{channel}.{field_name}")
+    if requirements.regions is None:
+        missing.append("task.d6.regions")
+    else:
+        for region_index, region in enumerate(requirements.regions):
+            prefix = f"task.d6.regions.{region_index}"
+            if region.minimum_bootstrap_units is None:
+                missing.append(f"{prefix}.minimum_bootstrap_units")
+            for channel in output_channels:
+                axis = region.axes.get(channel)
+                if axis is None:
+                    missing.append(f"{prefix}.axes.{channel}")
+                    continue
+                if axis.maximum_interval_half_width is None:
+                    missing.append(
+                        f"{prefix}.axes.{channel}.maximum_interval_half_width"
+                    )
+                if axis.maximum_rmse is None:
+                    missing.append(f"{prefix}.axes.{channel}.maximum_rmse")
     return missing
+
+
+def _bootstrap_rmse(
+    errors_by_run: List[np.ndarray],
+    repetitions: int,
+    random_seed: int,
+    output_dimension: int,
+) -> np.ndarray:
+    rng = np.random.default_rng(random_seed)
+    run_count = len(errors_by_run)
+    values = np.empty((repetitions, output_dimension), dtype=float)
+    for repetition in range(repetitions):
+        sampled_run_indices = rng.integers(
+            low=0,
+            high=run_count,
+            size=run_count,
+        )
+        sampled_errors = np.concatenate(
+            [errors_by_run[index] for index in sampled_run_indices],
+            axis=0,
+        )
+        values[repetition] = np.sqrt(
+            np.mean(np.square(sampled_errors), axis=0)
+        )
+    return values
+
+
+def _test_condition_values(
+    path: Path,
+    bundle: TaskBundle,
+    test_units: List[str],
+) -> Dict[str, np.ndarray]:
+    conditions = (bundle.task.d2.conditions if bundle.task.d2 else None) or {}
+    run_column = str(bundle.task.dataset_mapping.run_id_column)
+    values: Dict[str, List[Any]] = {name: [] for name in conditions}
+    with path.open("r", encoding="utf-8", newline="") as stream:
+        reader = csv.DictReader(stream)
+        for row in reader:
+            if (row.get(run_column) or "").strip() not in test_units:
+                continue
+            for name, condition in conditions.items():
+                if condition.source == "constant":
+                    values[name].append(condition.constant)
+                else:
+                    values[name].append(row.get(str(condition.column)))
+    return {
+        name: np.asarray(condition_values, dtype=object)
+        for name, condition_values in values.items()
+    }
 
 
 def evaluate_d6(
@@ -220,24 +288,12 @@ def evaluate_d6(
     ]
     bootstrap_repetitions = int(requirements.bootstrap_repetitions)
     random_seed = int(requirements.bootstrap_random_seed)
-    rng = np.random.default_rng(random_seed)
-    bootstrap_rmse = np.empty(
-        (bootstrap_repetitions, len(output_channels)),
-        dtype=float,
+    bootstrap_rmse = _bootstrap_rmse(
+        errors_by_run,
+        bootstrap_repetitions,
+        random_seed,
+        len(output_channels),
     )
-    for repetition in range(bootstrap_repetitions):
-        sampled_run_indices = rng.integers(
-            low=0,
-            high=test_unit_count,
-            size=test_unit_count,
-        )
-        sampled_errors = np.concatenate(
-            [errors_by_run[index] for index in sampled_run_indices],
-            axis=0,
-        )
-        bootstrap_rmse[repetition] = np.sqrt(
-            np.mean(np.square(sampled_errors), axis=0)
-        )
 
     confidence_level = float(requirements.confidence_level)
     alpha = 1.0 - confidence_level
@@ -298,16 +354,219 @@ def evaluate_d6(
                 )
             )
 
+    dimension_values: Dict[str, np.ndarray] = {
+        channel: evaluation.test_references[:, index]
+        for index, channel in enumerate(output_channels)
+    }
+    dimension_values.update(
+        _test_condition_values(path, bundle, test_units)
+    )
+    regional_metrics: Dict[str, Dict[str, Any]] = {}
+    calibration_acceptance_determinate = True
+    for region_index, region in enumerate(requirements.regions or []):
+        unknown_dimensions = set(region.dimensions) - set(dimension_values)
+        unexpected_axes = set(region.axes) - set(output_channels)
+        if unknown_dimensions:
+            calibration_acceptance_determinate = False
+            precision_violations.append(
+                Violation(
+                    code="unknown_performance_region_dimension",
+                    message=(
+                        f"region {region.region_id} refers to undeclared "
+                        "force or condition dimensions"
+                    ),
+                    observed=sorted(unknown_dimensions),
+                    expected="declared force axes or D2 operating conditions",
+                )
+            )
+            regional_metrics[region.region_id] = {
+                "status": CriterionStatus.FAIL.value,
+                "unknown_dimensions": sorted(unknown_dimensions),
+            }
+            continue
+        if unexpected_axes:
+            calibration_acceptance_determinate = False
+            precision_violations.append(
+                Violation(
+                    code="regional_performance_axis_mismatch",
+                    message=(
+                        f"region {region.region_id} contains unexpected "
+                        "performance axes"
+                    ),
+                    observed=sorted(unexpected_axes),
+                    expected=str(output_channels),
+                )
+            )
+            regional_metrics[region.region_id] = {
+                "status": CriterionStatus.FAIL.value,
+                "unexpected_axes": sorted(unexpected_axes),
+            }
+            continue
+
+        region_mask = np.ones(evaluation.test_errors.shape[0], dtype=bool)
+        invalid_dimension = False
+        for dimension, selector in region.dimensions.items():
+            values = dimension_values[dimension]
+            if selector.values is not None:
+                allowed = {str(value) for value in selector.values}
+                region_mask &= np.asarray(
+                    [str(value) in allowed for value in values],
+                    dtype=bool,
+                )
+            if selector.minimum is not None or selector.maximum is not None:
+                try:
+                    numeric_values = values.astype(float)
+                except (TypeError, ValueError):
+                    invalid_dimension = True
+                    precision_violations.append(
+                        Violation(
+                            code="non_numeric_performance_region_dimension",
+                            message=(
+                                f"region {region.region_id} applies numeric "
+                                f"bounds to non-numeric dimension {dimension}"
+                            ),
+                            field=dimension,
+                        )
+                    )
+                    break
+                if selector.minimum is not None:
+                    region_mask &= numeric_values >= selector.minimum
+                if selector.maximum is not None:
+                    region_mask &= numeric_values <= selector.maximum
+        if invalid_dimension:
+            calibration_acceptance_determinate = False
+            regional_metrics[region.region_id] = {
+                "status": CriterionStatus.FAIL.value,
+            }
+            continue
+
+        regional_errors_by_run = []
+        supporting_units = []
+        for test_unit in test_units:
+            unit_mask = evaluation.test_units_by_sample == test_unit
+            selected = evaluation.test_errors[region_mask & unit_mask]
+            if len(selected):
+                supporting_units.append(test_unit)
+                regional_errors_by_run.append(selected)
+        required_units = int(region.minimum_bootstrap_units)
+        region_metric: Dict[str, Any] = {
+            "dimensions": {
+                name: selector.model_dump(mode="json")
+                for name, selector in region.dimensions.items()
+            },
+            "test_sample_count": int(np.count_nonzero(region_mask)),
+            "supporting_test_units": supporting_units,
+            "supporting_test_unit_count": len(supporting_units),
+            "minimum_bootstrap_units": required_units,
+            "axes": {},
+        }
+        if len(supporting_units) < required_units:
+            calibration_acceptance_determinate = False
+            precision_violations.append(
+                Violation(
+                    code="insufficient_regional_test_units",
+                    message=(
+                        f"region {region.region_id} is represented by too few "
+                        "independent test runs"
+                    ),
+                    observed=len(supporting_units),
+                    expected=f">= {required_units}",
+                )
+            )
+            region_metric["status"] = CriterionStatus.FAIL.value
+            regional_metrics[region.region_id] = region_metric
+            continue
+
+        regional_bootstrap = _bootstrap_rmse(
+            regional_errors_by_run,
+            bootstrap_repetitions,
+            random_seed + region_index + 1,
+            len(output_channels),
+        )
+        regional_lower = np.quantile(regional_bootstrap, alpha / 2.0, axis=0)
+        regional_upper = np.quantile(
+            regional_bootstrap,
+            1.0 - alpha / 2.0,
+            axis=0,
+        )
+        regional_half_width = (regional_upper - regional_lower) / 2.0
+        regional_errors = evaluation.test_errors[region_mask]
+        regional_rmse = np.sqrt(
+            np.mean(np.square(regional_errors), axis=0)
+        )
+        region_precise = True
+        region_accepted = True
+        for axis_index, channel in enumerate(output_channels):
+            axis_requirement = region.axes[channel]
+            maximum_half_width = float(
+                axis_requirement.maximum_interval_half_width
+            )
+            maximum_rmse = float(axis_requirement.maximum_rmse)
+            precision_pass = bool(
+                regional_half_width[axis_index] <= maximum_half_width
+            )
+            acceptance_pass = bool(
+                regional_upper[axis_index] <= maximum_rmse
+            )
+            region_precise &= precision_pass
+            region_accepted &= acceptance_pass
+            calibration_axes_accepted.append(acceptance_pass)
+            region_metric["axes"][channel] = {
+                "rmse_estimate": float(regional_rmse[axis_index]),
+                "confidence_interval": {
+                    "lower": float(regional_lower[axis_index]),
+                    "upper": float(regional_upper[axis_index]),
+                    "confidence_level": confidence_level,
+                },
+                "interval_half_width": float(
+                    regional_half_width[axis_index]
+                ),
+                "maximum_interval_half_width": maximum_half_width,
+                "performance_evidence_precise": precision_pass,
+                "maximum_rmse": maximum_rmse,
+                "rmse_requirement_met": acceptance_pass,
+            }
+            if not precision_pass:
+                precision_violations.append(
+                    Violation(
+                        code="regional_metric_interval_too_wide",
+                        message=(
+                            f"region {region.region_id} {channel} RMSE "
+                            "confidence interval exceeds its precision limit"
+                        ),
+                        field=(
+                            f"regions.{region.region_id}.axes.{channel}."
+                            "maximum_interval_half_width"
+                        ),
+                        observed=float(regional_half_width[axis_index]),
+                        expected=f"<= {maximum_half_width}",
+                    )
+                )
+        region_metric["status"] = (
+            CriterionStatus.PASS.value
+            if region_precise
+            else CriterionStatus.FAIL.value
+        )
+        region_metric["calibration_acceptance_status"] = (
+            CriterionStatus.PASS.value
+            if region_accepted
+            else CriterionStatus.FAIL.value
+        )
+        regional_metrics[region.region_id] = region_metric
+
     dataset_status = (
         CriterionStatus.FAIL
         if precision_violations
         else CriterionStatus.PASS
     )
-    calibration_status = (
-        CriterionStatus.PASS
-        if all(calibration_axes_accepted)
-        else CriterionStatus.FAIL
-    )
+    if not calibration_acceptance_determinate:
+        calibration_status = CriterionStatus.INDETERMINATE
+    else:
+        calibration_status = (
+            CriterionStatus.PASS
+            if all(calibration_axes_accepted)
+            else CriterionStatus.FAIL
+        )
     violation_counts: Dict[str, int] = {}
     for violation in precision_violations:
         violation_counts[violation.code] = (
@@ -332,6 +591,7 @@ def evaluate_d6(
         "test_sample_count": int(evaluation.test_errors.shape[0]),
         "uncertainty_method_id": requirements.uncertainty_method_id,
         "axes": per_axis,
+        "regions": regional_metrics,
         "dataset_adequacy_status": dataset_status.value,
         "calibration_acceptance_status": calibration_status.value,
         "total_violations": len(precision_violations),
@@ -348,6 +608,11 @@ def evaluate_d6(
             "D6 passed for dataset adequacy: performance is estimated with "
             "the declared precision, but the calibration does not satisfy "
             "every performance and uncertainty requirement."
+        )
+    elif calibration_status == CriterionStatus.INDETERMINATE:
+        summary = (
+            "D6 passed for the available precision checks, but calibration "
+            "acceptance is indeterminate for at least one declared region."
         )
     else:
         summary = (

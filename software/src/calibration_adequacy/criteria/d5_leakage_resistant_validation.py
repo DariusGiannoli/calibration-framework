@@ -82,6 +82,8 @@ def _missing_d5_evidence(bundle: TaskBundle) -> List[str]:
         missing.append("task.d5.split_manifest_id")
     if requirements.split_frozen_before_development is None:
         missing.append("task.d5.split_frozen_before_development")
+    if requirements.development_selection_method_id is None:
+        missing.append("task.d5.development_selection_method_id")
 
     if requirements.data_use is None:
         missing.append("task.d5.data_use")
@@ -383,6 +385,9 @@ def evaluate_d5(
         "unassigned_observed_units": unassigned_units,
         "absent_declared_units": absent_declared_units,
         "model_source": requirements.model_source,
+        "development_selection_method_id": (
+            requirements.development_selection_method_id
+        ),
         "model_type": d3_requirements.model_type,
         "input_channels": input_channels,
         "output_channels": output_channels,

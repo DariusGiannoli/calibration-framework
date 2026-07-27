@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -15,6 +15,7 @@ class CriterionStatus(str, Enum):
     PASS = "PASS"
     FAIL = "FAIL"
     INDETERMINATE = "INDETERMINATE"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
 class Violation(StrictModel):
@@ -35,6 +36,15 @@ class CriterionResult(StrictModel):
     metrics: Dict[str, Any] = Field(default_factory=dict)
     missing_evidence: List[str] = Field(default_factory=list)
     violations: List[Violation] = Field(default_factory=list)
+
+
+class OverallAssessmentResult(StrictModel):
+    status: CriterionStatus
+    summary: str
+    task_id: str
+    criteria: Dict[str, CriterionResult]
+    calibration_acceptance_status: Optional[CriterionStatus] = None
+    missing_evidence: List[str] = Field(default_factory=list)
 
 
 class ChannelProfile(StrictModel):
@@ -83,6 +93,15 @@ class SetupProfile(StrictModel):
     setup_id: str
     maximum_time_offset_s: Optional[float] = Field(default=None, ge=0)
     reference_to_sensor_rotation: Optional[List[List[float]]] = None
+    sensor_acquisition_bandwidth_hz: Optional[float] = Field(
+        default=None,
+        gt=0,
+    )
+    reference_acquisition_bandwidth_hz: Optional[float] = Field(
+        default=None,
+        gt=0,
+    )
+    sampling_process_id: Optional[str] = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
     def validate_rotation_shape(self) -> "SetupProfile":
@@ -123,9 +142,54 @@ class DatasetMapping(StrictModel):
     )
 
 
+class GeneralizationClaim(StrictModel):
+    target_description: Optional[str] = Field(default=None, min_length=1)
+    independent_unit: Optional[
+        Literal["run", "condition", "sensor_unit"]
+    ] = None
+    sensor_scope: Optional[Literal["same_sensor", "new_sensors"]] = None
+    operating_conditions: Optional[List[str]] = None
+
+
+class CalibrationClaim(StrictModel):
+    sensor_inputs: Optional[List[str]] = None
+    reference_outputs: Optional[List[str]] = None
+    operating_domain: Optional[List[str]] = None
+    operating_conditions: Optional[List[str]] = None
+    model_family: Optional[str] = Field(default=None, min_length=1)
+    performance_metrics: Optional[List[str]] = None
+    generalization: Optional[GeneralizationClaim] = None
+
+
+class CriterionApplicability(StrictModel):
+    applicable: bool
+    reason: Optional[str] = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def require_reason_for_exclusion(self) -> "CriterionApplicability":
+        if not self.applicable and not self.reason:
+            raise ValueError("a non-applicable criterion requires a reason")
+        return self
+
+
+class AssessmentRequirements(StrictModel):
+    criteria: Dict[
+        Literal["D1", "D2", "D3", "D4", "D5", "D6", "D7"],
+        CriterionApplicability,
+    ]
+
+
 class D1Requirements(StrictModel):
     maximum_reference_uncertainty: Dict[str, Optional[float]]
     require_reference_certificate: bool = True
+    require_acquisition_bandwidth: bool = True
+    require_sampling_process: bool = True
+    invalid_observation_policy_id: Optional[str] = Field(
+        default=None,
+        min_length=1,
+    )
+    exclusion_record_id: Optional[str] = Field(default=None, min_length=1)
+    exclusions_reviewed: Optional[bool] = None
 
     @model_validator(mode="after")
     def validate_uncertainty_limits(self) -> "D1Requirements":
@@ -168,12 +232,70 @@ class D2AxisDomain(StrictModel):
         return self
 
 
+class D2ConditionDomain(StrictModel):
+    kind: Literal["continuous", "categorical", "fixed"]
+    source: Literal["column", "constant"]
+    column: Optional[str] = Field(default=None, min_length=1)
+    constant: Optional[Union[str, float, int, bool]] = None
+    unit: Optional[str] = Field(default=None, min_length=1)
+    minimum: Optional[float] = None
+    maximum: Optional[float] = None
+    grid_points: Optional[int] = Field(default=None, ge=2)
+    categories: Optional[List[str]] = None
+    claimed_value: Optional[Union[str, float, int, bool]] = None
+
+    @model_validator(mode="after")
+    def validate_condition(self) -> "D2ConditionDomain":
+        if self.source == "column" and self.column is None:
+            raise ValueError("column source requires column")
+        if self.source == "constant" and self.constant is None:
+            raise ValueError("constant source requires constant")
+        if self.kind == "continuous":
+            if (
+                self.minimum is not None
+                and self.maximum is not None
+                and self.minimum >= self.maximum
+            ):
+                raise ValueError("continuous minimum must be smaller than maximum")
+        if self.kind == "categorical" and self.categories is not None:
+            if (
+                not self.categories
+                or len(self.categories) != len(set(self.categories))
+            ):
+                raise ValueError("categorical values must be non-empty and unique")
+        return self
+
+
+class D2RegionInterval(StrictModel):
+    minimum: Optional[float] = None
+    maximum: Optional[float] = None
+
+    @model_validator(mode="after")
+    def validate_interval(self) -> "D2RegionInterval":
+        if (
+            self.minimum is not None
+            and self.maximum is not None
+            and self.minimum > self.maximum
+        ):
+            raise ValueError("excluded-region minimum cannot exceed maximum")
+        return self
+
+
+class D2ExcludedRegion(StrictModel):
+    region_id: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+    continuous_bounds: Dict[str, D2RegionInterval] = Field(default_factory=dict)
+    categorical_values: Dict[str, List[str]] = Field(default_factory=dict)
+
+
 class D2Requirements(StrictModel):
     axes: List[str] = Field(
         min_length=1,
         description="Ordered reference axes used in the coverage calculation.",
     )
     domain: Dict[str, D2AxisDomain]
+    conditions: Optional[Dict[str, D2ConditionDomain]] = None
+    excluded_regions: Optional[List[D2ExcludedRegion]] = None
     maximum_fill_distance: Optional[float] = Field(default=None, ge=0)
 
     @model_validator(mode="after")
@@ -215,6 +337,11 @@ class D3Requirements(StrictModel):
         lt=1,
     )
     maximum_condition_number: Optional[float] = Field(default=None, ge=1)
+    model_specific_test_id: Optional[str] = Field(default=None, min_length=1)
+    confounding_review_id: Optional[str] = Field(default=None, min_length=1)
+    condition_handling: Optional[
+        Literal["held_fixed", "included_in_model", "demonstrated_invariant"]
+    ] = None
 
     @model_validator(mode="after")
     def validate_unique_inputs(self) -> "D3Requirements":
@@ -238,6 +365,9 @@ class D4RunEvidence(StrictModel):
 
 
 class D4Requirements(StrictModel):
+    independent_unit: Literal["run"] = "run"
+    dependence_method_id: Optional[str] = Field(default=None, min_length=1)
+    stationarity_reviewed: Optional[bool] = None
     signals: List[D4SignalRequirements] = Field(min_length=1)
     minimum_independent_runs: Optional[int] = Field(default=None, ge=1)
     minimum_runs_per_configuration: Optional[Dict[str, int]] = None
@@ -306,6 +436,10 @@ class D5Requirements(StrictModel):
     minimum_test_units: Optional[int] = Field(default=None, ge=1)
     split_manifest_id: Optional[str] = Field(default=None, min_length=1)
     split_frozen_before_development: Optional[bool] = None
+    development_selection_method_id: Optional[str] = Field(
+        default=None,
+        min_length=1,
+    )
     data_use: Optional[D5DataUseEvidence] = None
 
 
@@ -319,6 +453,42 @@ class D6AxisRequirements(StrictModel):
     )
 
 
+class D6RegionDimension(StrictModel):
+    minimum: Optional[float] = None
+    maximum: Optional[float] = None
+    values: Optional[List[str]] = None
+
+    @model_validator(mode="after")
+    def validate_selector(self) -> "D6RegionDimension":
+        if (
+            self.minimum is not None
+            and self.maximum is not None
+            and self.minimum > self.maximum
+        ):
+            raise ValueError("region minimum cannot exceed maximum")
+        if self.values is not None and not self.values:
+            raise ValueError("region values cannot be empty")
+        if (
+            self.minimum is None
+            and self.maximum is None
+            and self.values is None
+        ):
+            raise ValueError("a region dimension needs bounds or values")
+        return self
+
+
+class D6RegionalAxisRequirements(StrictModel):
+    maximum_interval_half_width: Optional[float] = Field(default=None, ge=0)
+    maximum_rmse: Optional[float] = Field(default=None, ge=0)
+
+
+class D6RegionRequirements(StrictModel):
+    region_id: str = Field(min_length=1)
+    dimensions: Dict[str, D6RegionDimension] = Field(min_length=1)
+    minimum_bootstrap_units: Optional[int] = Field(default=None, ge=2)
+    axes: Dict[str, D6RegionalAxisRequirements] = Field(default_factory=dict)
+
+
 class D6Requirements(StrictModel):
     metric: Literal["rmse"]
     confidence_level: Optional[float] = Field(default=None, gt=0, lt=1)
@@ -328,6 +498,64 @@ class D6Requirements(StrictModel):
     minimum_bootstrap_units: Optional[int] = Field(default=None, ge=2)
     uncertainty_method_id: Optional[str] = Field(default=None, min_length=1)
     axes: Dict[str, D6AxisRequirements] = Field(default_factory=dict)
+    regions: Optional[List[D6RegionRequirements]] = None
+
+    @model_validator(mode="after")
+    def validate_regions(self) -> "D6Requirements":
+        if self.regions is not None:
+            region_ids = [region.region_id for region in self.regions]
+            if len(region_ids) != len(set(region_ids)):
+                raise ValueError("D6 region identifiers must be unique")
+        return self
+
+
+EvidenceRole = Literal[
+    "raw_data",
+    "acquisition_metadata",
+    "task_config",
+    "sensor_profile",
+    "reference_profile",
+    "setup_profile",
+    "preprocessing_config",
+    "exclusion_record",
+    "partition_manifest",
+    "dependency_lock",
+    "criterion_result",
+    "diagnostic_figure",
+]
+
+
+class EvidenceFileRecord(StrictModel):
+    path: str = Field(min_length=1)
+    role: EvidenceRole
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class EvidenceManifest(StrictModel):
+    schema_version: str = "0.1"
+    package_id: str = Field(min_length=1)
+    files: List[EvidenceFileRecord] = Field(min_length=1)
+    software_commit: str = Field(min_length=7)
+    dependency_snapshot_id: str = Field(min_length=1)
+    preprocessing_procedure_id: str = Field(min_length=1)
+    exclusion_record_id: str = Field(min_length=1)
+    partition_manifest_id: str = Field(min_length=1)
+    random_seeds: Dict[str, int] = Field(default_factory=dict)
+    criterion_results: Dict[
+        Literal["D0", "D1", "D2", "D3", "D4", "D5", "D6"],
+        str,
+    ]
+
+
+class D7Requirements(StrictModel):
+    evidence_manifest_path: Optional[str] = Field(default=None, min_length=1)
+    evidence_package_id: Optional[str] = Field(default=None, min_length=1)
+    required_file_roles: Optional[List[EvidenceRole]] = None
+    required_criterion_results: Optional[
+        List[Literal["D0", "D1", "D2", "D3", "D4", "D5", "D6"]]
+    ] = None
+    numerical_absolute_tolerance: Optional[float] = Field(default=None, ge=0)
+    numerical_relative_tolerance: Optional[float] = Field(default=None, ge=0)
 
 
 class TaskConfig(StrictModel):
@@ -335,12 +563,15 @@ class TaskConfig(StrictModel):
     task_id: str
     profiles: ProfileReferences
     dataset_mapping: DatasetMapping
+    claim: Optional[CalibrationClaim] = None
+    assessment: Optional[AssessmentRequirements] = None
     d1: D1Requirements
     d2: Optional[D2Requirements] = None
     d3: Optional[D3Requirements] = None
     d4: Optional[D4Requirements] = None
     d5: Optional[D5Requirements] = None
     d6: Optional[D6Requirements] = None
+    d7: Optional[D7Requirements] = None
 
 
 class TaskBundle(StrictModel):

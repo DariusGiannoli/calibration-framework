@@ -81,6 +81,10 @@ def _missing_d4_evidence(bundle: TaskBundle) -> List[str]:
         missing.append("task.d4.minimum_independent_runs")
     if requirements.minimum_effective_sample_size is None:
         missing.append("task.d4.minimum_effective_sample_size")
+    if requirements.dependence_method_id is None:
+        missing.append("task.d4.dependence_method_id")
+    if requirements.stationarity_reviewed is None:
+        missing.append("task.d4.stationarity_reviewed")
     if requirements.initialization_procedure_id is None:
         missing.append("task.d4.initialization_procedure_id")
     if requirements.zeroing_procedure_id is None:
@@ -234,6 +238,15 @@ def evaluate_d4(
                     expected=expected,
                 )
             )
+
+    if not requirements.stationarity_reviewed:
+        add_violation(
+            "stationarity_not_supported",
+            "the declared autocorrelation ESS method requires reviewed stationarity",
+            field="stationarity_reviewed",
+            observed=requirements.stationarity_reviewed,
+            expected="true",
+        )
 
     required_columns = [
         run_id_column,
@@ -533,6 +546,9 @@ def evaluate_d4(
         "minimum_independent_runs": minimum_independent_runs,
         "configuration_run_counts": dict(sorted(configuration_run_counts.items())),
         "minimum_runs_per_configuration": configuration_requirements,
+        "independent_unit": requirements.independent_unit,
+        "dependence_method_id": requirements.dependence_method_id,
+        "stationarity_reviewed": requirements.stationarity_reviewed,
         "initialization_procedure_id": requirements.initialization_procedure_id,
         "zeroing_procedure_id": requirements.zeroing_procedure_id,
         "signals": signal_metrics,

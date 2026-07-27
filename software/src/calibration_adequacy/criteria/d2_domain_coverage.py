@@ -5,12 +5,13 @@ import itertools
 import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from ..models import (
     CriterionResult,
     CriterionStatus,
-    D2AxisDomain,
+    D2ConditionDomain,
+    D2ExcludedRegion,
     TaskBundle,
     Violation,
 )
@@ -27,14 +28,19 @@ class _KDNode:
     right: Optional["_KDNode"]
 
 
+@dataclass(frozen=True)
+class _Observation:
+    continuous: Tuple[float, ...]
+    stratum: Tuple[str, ...]
+
+
 def _build_kd_tree(
     points: List[Tuple[float, ...]],
     depth: int = 0,
 ) -> Optional[_KDNode]:
     if not points:
         return None
-    dimensions = len(points[0])
-    axis = depth % dimensions
+    axis = depth % len(points[0])
     points.sort(key=lambda point: point[axis])
     middle = len(points) // 2
     return _KDNode(
@@ -45,13 +51,6 @@ def _build_kd_tree(
     )
 
 
-def _squared_distance(
-    first: Sequence[float],
-    second: Sequence[float],
-) -> float:
-    return sum((left - right) ** 2 for left, right in zip(first, second))
-
-
 def _nearest_squared_distance(
     node: Optional[_KDNode],
     query: Sequence[float],
@@ -59,12 +58,13 @@ def _nearest_squared_distance(
 ) -> float:
     if node is None:
         return best
-
-    best = min(best, _squared_distance(node.point, query))
+    best = min(
+        best,
+        sum((left - right) ** 2 for left, right in zip(node.point, query)),
+    )
     difference = query[node.axis] - node.point[node.axis]
     near = node.left if difference <= 0 else node.right
     far = node.right if difference <= 0 else node.left
-
     best = _nearest_squared_distance(near, query, best)
     if difference * difference < best:
         best = _nearest_squared_distance(far, query, best)
@@ -81,7 +81,11 @@ def _matrix_vector_product(
     )
 
 
-def _context(bundle: TaskBundle, dataset_path: Path, d1_status: str) -> Dict[str, str]:
+def _context(
+    bundle: TaskBundle,
+    dataset_path: Path,
+    d1_status: str,
+) -> Dict[str, str]:
     return {
         "task_id": bundle.task.task_id,
         "dataset_path": str(dataset_path),
@@ -103,7 +107,7 @@ def _indeterminate_result(
 ) -> CriterionResult:
     return CriterionResult(
         criterion_id="D2",
-        criterion_name="Domain Coverage",
+        criterion_name="Claimed-Domain Coverage",
         status=CriterionStatus.INDETERMINATE,
         summary=summary,
         context=_context(bundle, dataset_path, d1_status),
@@ -113,17 +117,38 @@ def _indeterminate_result(
     )
 
 
-def _missing_d2_evidence(
-    axes: Sequence[str],
-    domain: Dict[str, D2AxisDomain],
-    maximum_fill_distance: Optional[float],
-    bundle: TaskBundle,
+def _missing_condition_evidence(
+    name: str,
+    condition: D2ConditionDomain,
 ) -> List[str]:
+    prefix = f"task.d2.conditions.{name}"
     missing: List[str] = []
-    for axis in axes:
+    if condition.kind == "continuous":
+        if condition.unit is None:
+            missing.append(f"{prefix}.unit")
+        if condition.minimum is None:
+            missing.append(f"{prefix}.minimum")
+        if condition.maximum is None:
+            missing.append(f"{prefix}.maximum")
+        if condition.grid_points is None:
+            missing.append(f"{prefix}.grid_points")
+    elif condition.kind == "categorical":
+        if condition.categories is None:
+            missing.append(f"{prefix}.categories")
+    elif condition.claimed_value is None:
+        missing.append(f"{prefix}.claimed_value")
+    return missing
+
+
+def _missing_d2_evidence(bundle: TaskBundle) -> List[str]:
+    requirements = bundle.task.d2
+    if requirements is None:
+        return ["task.d2"]
+    missing: List[str] = []
+    for axis in requirements.axes:
         if axis not in bundle.task.dataset_mapping.reference_channels:
             missing.append(f"task.dataset_mapping.reference_channels.{axis}")
-        axis_domain = domain.get(axis)
+        axis_domain = requirements.domain.get(axis)
         if axis_domain is None:
             missing.append(f"task.d2.domain.{axis}")
             continue
@@ -133,16 +158,107 @@ def _missing_d2_evidence(
             missing.append(f"task.d2.domain.{axis}.maximum")
         if axis_domain.grid_points is None:
             missing.append(f"task.d2.domain.{axis}.grid_points")
-    if maximum_fill_distance is None:
+    if requirements.conditions is None:
+        missing.append("task.d2.conditions")
+    else:
+        for name, condition in requirements.conditions.items():
+            missing.extend(_missing_condition_evidence(name, condition))
+    if requirements.excluded_regions is None:
+        missing.append("task.d2.excluded_regions")
+    if requirements.maximum_fill_distance is None:
         missing.append("task.d2.maximum_fill_distance")
     return missing
+
+
+def _condition_value(
+    row: Dict[str, str],
+    condition: D2ConditionDomain,
+) -> Any:
+    if condition.source == "constant":
+        return condition.constant
+    return row.get(str(condition.column))
+
+
+def _load_observations(
+    path: Path,
+    bundle: TaskBundle,
+    axes: Sequence[str],
+    rotation: Sequence[Sequence[float]],
+    continuous_conditions: Sequence[Tuple[str, D2ConditionDomain]],
+    stratum_conditions: Sequence[Tuple[str, D2ConditionDomain]],
+) -> Tuple[List[_Observation], List[str]]:
+    reference_columns = [
+        bundle.task.dataset_mapping.reference_channels[axis] for axis in axes
+    ]
+    required_condition_columns = [
+        str(condition.column)
+        for _, condition in [*continuous_conditions, *stratum_conditions]
+        if condition.source == "column"
+    ]
+    observations: List[_Observation] = []
+    missing_columns: List[str] = []
+    with path.open("r", encoding="utf-8", newline="") as stream:
+        reader = csv.DictReader(stream)
+        fieldnames = set(reader.fieldnames or [])
+        for column in required_condition_columns:
+            if column not in fieldnames:
+                missing_columns.append(column)
+        if missing_columns:
+            return [], missing_columns
+        for row in reader:
+            reference = tuple(float(row[column]) for column in reference_columns)
+            rotated = _matrix_vector_product(rotation, reference)
+            continuous = (
+                *rotated,
+                *(
+                    float(_condition_value(row, condition))
+                    for _, condition in continuous_conditions
+                ),
+            )
+            stratum = tuple(
+                str(_condition_value(row, condition))
+                for _, condition in stratum_conditions
+            )
+            observations.append(
+                _Observation(
+                    continuous=tuple(continuous),
+                    stratum=stratum,
+                )
+            )
+    return observations, missing_columns
+
+
+def _grid_point_excluded(
+    physical_point: Dict[str, float],
+    stratum: Dict[str, str],
+    exclusions: Sequence[D2ExcludedRegion],
+) -> Optional[str]:
+    for region in exclusions:
+        continuous_match = all(
+            (
+                interval.minimum is None
+                or physical_point.get(name, -math.inf) >= interval.minimum
+            )
+            and (
+                interval.maximum is None
+                or physical_point.get(name, math.inf) <= interval.maximum
+            )
+            for name, interval in region.continuous_bounds.items()
+        )
+        categorical_match = all(
+            stratum.get(name) in values
+            for name, values in region.categorical_values.items()
+        )
+        if continuous_match and categorical_match:
+            return region.region_id
+    return None
 
 
 def evaluate_d2(
     dataset_path: Union[str, Path],
     bundle: TaskBundle,
 ) -> CriterionResult:
-    """Evaluate the normalized grid fill-distance criterion declared as D2."""
+    """Evaluate joint force-condition support over the declared claim domain."""
 
     path = Path(dataset_path).expanduser().resolve()
     d1_result = evaluate_d1(path, bundle)
@@ -168,13 +284,7 @@ def evaluate_d2(
             ["task.d2"],
             d1_status=d1_result.status.value,
         )
-
-    missing_evidence = _missing_d2_evidence(
-        requirements.axes,
-        requirements.domain,
-        requirements.maximum_fill_distance,
-        bundle,
-    )
+    missing_evidence = _missing_d2_evidence(bundle)
     if missing_evidence:
         return _indeterminate_result(
             bundle,
@@ -185,10 +295,9 @@ def evaluate_d2(
             d1_status=d1_result.status.value,
         )
 
-    axes = requirements.axes
+    axes = list(requirements.axes)
     rotation = bundle.setup.reference_to_sensor_rotation
     if rotation is None:
-        # D1 cannot pass with a missing rotation, but keep this invariant explicit.
         return _indeterminate_result(
             bundle,
             path,
@@ -196,185 +305,306 @@ def evaluate_d2(
             ["setup.reference_to_sensor_rotation"],
             d1_status=d1_result.status.value,
         )
-
     if len(axes) != len(rotation):
-        return CriterionResult(
-            criterion_id="D2",
-            criterion_name="Domain Coverage",
-            status=CriterionStatus.FAIL,
-            summary=(
-                "D2 failed because the declared axes do not match the "
-                "setup transformation."
-            ),
-            context=_context(bundle, path, d1_result.status.value),
-            metrics={
-                "declared_axis_count": len(axes),
-                "transformation_dimension": len(rotation),
-            },
-            missing_evidence=[],
-            violations=[
-                Violation(
-                    code="axis_rotation_dimension_mismatch",
-                    message="D2 axis count must match the setup transformation",
-                    observed=len(axes),
-                    expected=str(len(rotation)),
-                )
-            ],
+        return _failure(
+            bundle,
+            path,
+            d1_result.status.value,
+            "axis_rotation_dimension_mismatch",
+            "D2 axes must match the setup transformation dimension.",
+            len(axes),
+            str(len(rotation)),
         )
 
-    axis_domains = [requirements.domain[axis] for axis in axes]
-    lower_bounds = [float(axis.minimum) for axis in axis_domains]
-    upper_bounds = [float(axis.maximum) for axis in axis_domains]
+    conditions = requirements.conditions or {}
+    continuous_conditions = [
+        (name, condition)
+        for name, condition in conditions.items()
+        if condition.kind == "continuous"
+    ]
+    stratum_conditions = [
+        (name, condition)
+        for name, condition in conditions.items()
+        if condition.kind in {"categorical", "fixed"}
+    ]
+    continuous_names = [*axes, *(name for name, _ in continuous_conditions)]
+    lower_bounds = [
+        *(float(requirements.domain[axis].minimum) for axis in axes),
+        *(float(condition.minimum) for _, condition in continuous_conditions),
+    ]
+    upper_bounds = [
+        *(float(requirements.domain[axis].maximum) for axis in axes),
+        *(float(condition.maximum) for _, condition in continuous_conditions),
+    ]
+    grid_shape = [
+        *(int(requirements.domain[axis].grid_points) for axis in axes),
+        *(int(condition.grid_points) for _, condition in continuous_conditions),
+    ]
     widths = [
         maximum - minimum
         for minimum, maximum in zip(lower_bounds, upper_bounds)
     ]
-    grid_shape = [int(axis.grid_points) for axis in axis_domains]
-    grid_point_count = math.prod(grid_shape)
-    if grid_point_count > MAX_EVALUATION_GRID_POINTS:
+
+    claimed_stratum_values: List[List[str]] = []
+    for _, condition in stratum_conditions:
+        if condition.kind == "categorical":
+            claimed_stratum_values.append(list(condition.categories or []))
+        else:
+            claimed_stratum_values.append([str(condition.claimed_value)])
+    claimed_strata = list(itertools.product(*claimed_stratum_values))
+    if not claimed_strata:
+        claimed_strata = [tuple()]
+
+    grid_points_per_stratum = math.prod(grid_shape)
+    requested_grid_points = grid_points_per_stratum * len(claimed_strata)
+    if requested_grid_points > MAX_EVALUATION_GRID_POINTS:
         return _indeterminate_result(
             bundle,
             path,
-            "D2 was not evaluated because the declared grid exceeds the current "
-            "software safety limit.",
+            "D2 was not evaluated because the joint grid exceeds the software limit.",
             ["task.d2.grid_within_software_limit"],
             d1_status=d1_result.status.value,
             metrics={
                 "grid_shape": grid_shape,
-                "grid_point_count": grid_point_count,
+                "claimed_stratum_count": len(claimed_strata),
+                "requested_grid_point_count": requested_grid_points,
                 "software_grid_point_limit": MAX_EVALUATION_GRID_POINTS,
             },
         )
 
-    achieved_points = _load_achieved_points(path, bundle, axes, rotation)
-    normalized_points = [
-        tuple(
-            (value - minimum) / width
-            for value, minimum, width in zip(point, lower_bounds, widths)
+    exclusions = requirements.excluded_regions or []
+    known_continuous = set(continuous_names)
+    known_strata = {name for name, _ in stratum_conditions}
+    for exclusion in exclusions:
+        unknown_continuous = set(exclusion.continuous_bounds) - known_continuous
+        unknown_strata = set(exclusion.categorical_values) - known_strata
+        if unknown_continuous or unknown_strata:
+            return _failure(
+                bundle,
+                path,
+                d1_result.status.value,
+                "unknown_exclusion_dimension",
+                "an excluded region refers to an undeclared domain dimension",
+                sorted(unknown_continuous | unknown_strata),
+                "declared D2 dimensions",
+            )
+
+    observations, missing_columns = _load_observations(
+        path,
+        bundle,
+        axes,
+        rotation,
+        continuous_conditions,
+        stratum_conditions,
+    )
+    if missing_columns:
+        return _failure(
+            bundle,
+            path,
+            d1_result.status.value,
+            "missing_condition_column",
+            "a declared operating-condition column is absent from the dataset",
+            sorted(set(missing_columns)),
+            "all D2 condition columns present",
         )
-        for point in achieved_points
-    ]
-    tree = _build_kd_tree(normalized_points.copy())
-    if tree is None:
+    if not observations:
         return _indeterminate_result(
             bundle,
             path,
-            "D2 is indeterminate because no D1-valid reference points are available.",
-            ["dataset.D1_valid_reference_points"],
+            "D2 is indeterminate because no achieved observations are available.",
+            ["dataset.D1_valid_observations"],
             d1_status=d1_result.status.value,
         )
 
+    normalized_observations = [
+        _Observation(
+            continuous=tuple(
+                (value - minimum) / width
+                for value, minimum, width in zip(
+                    observation.continuous,
+                    lower_bounds,
+                    widths,
+                )
+            ),
+            stratum=observation.stratum,
+        )
+        for observation in observations
+    ]
     normalized_grid_axes = [
         tuple(index / (count - 1) for index in range(count))
         for count in grid_shape
     ]
-    maximum_squared_distance = -1.0
-    worst_normalized_point: Optional[Tuple[float, ...]] = None
-    for grid_point in itertools.product(*normalized_grid_axes):
-        nearest_squared = _nearest_squared_distance(tree, grid_point)
-        if nearest_squared > maximum_squared_distance:
-            maximum_squared_distance = nearest_squared
-            worst_normalized_point = tuple(grid_point)
+    stratum_names = [name for name, _ in stratum_conditions]
+    maximum_fill_distance = -1.0
+    worst_point: Dict[str, Any] = {}
+    evaluated_grid_points = 0
+    excluded_grid_points = 0
+    stratum_metrics: Dict[str, Any] = {}
 
-    estimated_fill_distance = math.sqrt(maximum_squared_distance)
-    worst_point = {
-        axis: lower + normalized * width
-        for axis, lower, width, normalized in zip(
-            axes,
-            lower_bounds,
-            widths,
-            worst_normalized_point or (),
-        )
-    }
+    for stratum_values in claimed_strata:
+        stratum_key = "|".join(
+            f"{name}={value}"
+            for name, value in zip(stratum_names, stratum_values)
+        ) or "__all__"
+        points = [
+            observation.continuous
+            for observation in normalized_observations
+            if observation.stratum == tuple(stratum_values)
+        ]
+        tree = _build_kd_tree(points.copy())
+        stratum_maximum = -1.0
+        stratum_worst: Dict[str, Any] = {}
+        stratum_evaluated = 0
+        stratum_excluded = 0
+        stratum_dict = dict(zip(stratum_names, stratum_values))
+
+        for normalized_grid_point in itertools.product(*normalized_grid_axes):
+            physical = {
+                name: lower + normalized * width
+                for name, lower, width, normalized in zip(
+                    continuous_names,
+                    lower_bounds,
+                    widths,
+                    normalized_grid_point,
+                )
+            }
+            exclusion_id = _grid_point_excluded(
+                physical,
+                stratum_dict,
+                exclusions,
+            )
+            if exclusion_id is not None:
+                excluded_grid_points += 1
+                stratum_excluded += 1
+                continue
+            evaluated_grid_points += 1
+            stratum_evaluated += 1
+            nearest_squared = _nearest_squared_distance(tree, normalized_grid_point)
+            distance = math.sqrt(nearest_squared)
+            if distance > stratum_maximum:
+                stratum_maximum = distance
+                stratum_worst = {**physical, **stratum_dict}
+
+        if stratum_evaluated == 0:
+            stratum_maximum = 0.0
+        if stratum_maximum > maximum_fill_distance:
+            maximum_fill_distance = stratum_maximum
+            worst_point = stratum_worst
+        stratum_metrics[stratum_key] = {
+            "achieved_samples": len(points),
+            "evaluated_grid_points": stratum_evaluated,
+            "excluded_grid_points": stratum_excluded,
+            "estimated_fill_distance": stratum_maximum,
+            "worst_covered_domain_point": stratum_worst,
+        }
+
+    inside_count = sum(
+        observation.stratum in claimed_strata
+        and all(0.0 <= value <= 1.0 for value in observation.continuous)
+        for observation in normalized_observations
+    )
     achieved_minimum = {
-        axis: min(point[index] for point in achieved_points)
-        for index, axis in enumerate(axes)
+        name: min(observation.continuous[index] for observation in observations)
+        for index, name in enumerate(continuous_names)
     }
     achieved_maximum = {
-        axis: max(point[index] for point in achieved_points)
-        for index, axis in enumerate(axes)
+        name: max(observation.continuous[index] for observation in observations)
+        for index, name in enumerate(continuous_names)
     }
-    inside_domain_count = sum(
-        all(0.0 <= coordinate <= 1.0 for coordinate in point)
-        for point in normalized_points
-    )
     grid_covering_radius = 0.5 * math.sqrt(
         sum((1.0 / (count - 1)) ** 2 for count in grid_shape)
     )
     maximum_allowed = float(requirements.maximum_fill_distance)
-
+    failed = maximum_fill_distance > maximum_allowed
     metrics = {
         "d1_status": d1_result.status.value,
-        "samples_used": len(achieved_points),
-        "samples_inside_domain": inside_domain_count,
-        "samples_outside_domain": len(achieved_points) - inside_domain_count,
+        "samples_used": len(observations),
+        "samples_inside_claim_domain": inside_count,
+        "samples_outside_claim_domain": len(observations) - inside_count,
         "axes": axes,
-        "domain_minimum": dict(zip(axes, lower_bounds)),
-        "domain_maximum": dict(zip(axes, upper_bounds)),
+        "condition_names": list(conditions),
+        "continuous_dimensions": continuous_names,
+        "categorical_dimensions": stratum_names,
+        "domain_minimum": dict(zip(continuous_names, lower_bounds)),
+        "domain_maximum": dict(zip(continuous_names, upper_bounds)),
         "achieved_minimum": achieved_minimum,
         "achieved_maximum": achieved_maximum,
         "grid_shape": grid_shape,
-        "grid_point_count": grid_point_count,
+        "grid_point_count": evaluated_grid_points,
+        "excluded_grid_point_count": excluded_grid_points,
+        "declared_excluded_regions": [
+            region.model_dump(mode="json") for region in exclusions
+        ],
         "grid_covering_radius_normalized": grid_covering_radius,
-        "estimated_fill_distance": estimated_fill_distance,
+        "estimated_fill_distance": maximum_fill_distance,
         "maximum_fill_distance": maximum_allowed,
         "worst_covered_domain_point": worst_point,
-        "total_violations": 0,
-        "violations_by_code": {},
+        "strata": stratum_metrics,
+        "total_violations": 1 if failed else 0,
+        "violations_by_code": {"fill_distance_exceeded": 1} if failed else {},
     }
-
-    if estimated_fill_distance <= maximum_allowed:
+    if not failed:
         return CriterionResult(
             criterion_id="D2",
-            criterion_name="Domain Coverage",
+            criterion_name="Claimed-Domain Coverage",
             status=CriterionStatus.PASS,
             summary=(
-                "D2 passed: the estimated fill distance is within the "
-                "declared limit."
+                "D2 passed: every non-excluded force-condition stratum is "
+                "supported within the declared fill-distance limit."
             ),
             context=_context(bundle, path, d1_result.status.value),
             metrics=metrics,
             missing_evidence=[],
             violations=[],
         )
-
-    failure_metrics = {
-        **metrics,
-        "total_violations": 1,
-        "violations_by_code": {"fill_distance_exceeded": 1},
-    }
     return CriterionResult(
         criterion_id="D2",
-        criterion_name="Domain Coverage",
+        criterion_name="Claimed-Domain Coverage",
         status=CriterionStatus.FAIL,
-        summary="D2 failed: the estimated fill distance exceeds the declared limit.",
+        summary=(
+            "D2 failed: at least one claimed force-condition region exceeds "
+            "the declared fill-distance limit."
+        ),
         context=_context(bundle, path, d1_result.status.value),
-        metrics=failure_metrics,
+        metrics=metrics,
         missing_evidence=[],
         violations=[
             Violation(
                 code="fill_distance_exceeded",
-                message="estimated normalized fill distance exceeds h_max",
-                observed=estimated_fill_distance,
+                message="joint force-condition fill distance exceeds h_max",
+                observed=maximum_fill_distance,
                 expected=f"<= {maximum_allowed}",
             )
         ],
     )
 
 
-def _load_achieved_points(
-    path: Path,
+def _failure(
     bundle: TaskBundle,
-    axes: Sequence[str],
-    rotation: Sequence[Sequence[float]],
-) -> List[Tuple[float, ...]]:
-    columns = [
-        bundle.task.dataset_mapping.reference_channels[axis] for axis in axes
-    ]
-    points: List[Tuple[float, ...]] = []
-    with path.open("r", encoding="utf-8", newline="") as stream:
-        reader = csv.DictReader(stream)
-        for row in reader:
-            reference_point = tuple(float(row[column]) for column in columns)
-            points.append(_matrix_vector_product(rotation, reference_point))
-    return points
+    path: Path,
+    d1_status: str,
+    code: str,
+    message: str,
+    observed: Any,
+    expected: str,
+) -> CriterionResult:
+    return CriterionResult(
+        criterion_id="D2",
+        criterion_name="Claimed-Domain Coverage",
+        status=CriterionStatus.FAIL,
+        summary=f"D2 failed: {message}",
+        context=_context(bundle, path, d1_status),
+        metrics={
+            "total_violations": 1,
+            "violations_by_code": {code: 1},
+        },
+        missing_evidence=[],
+        violations=[
+            Violation(
+                code=code,
+                message=message,
+                observed=observed,
+                expected=expected,
+            )
+        ],
+    )

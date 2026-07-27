@@ -6,7 +6,13 @@ from typing import Any, Dict, Type, TypeVar, Union
 import yaml
 from pydantic import BaseModel
 
-from .models import InstrumentProfile, SetupProfile, TaskBundle, TaskConfig
+from .models import (
+    EvidenceManifest,
+    InstrumentProfile,
+    SetupProfile,
+    TaskBundle,
+    TaskConfig,
+)
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
@@ -58,3 +64,7 @@ def load_task_bundle(task_path: Union[str, Path]) -> TaskBundle:
         reference=reference,
         setup=setup,
     )
+
+
+def load_evidence_manifest(path: Union[str, Path]) -> EvidenceManifest:
+    return _load_yaml_model(Path(path).expanduser().resolve(), EvidenceManifest)

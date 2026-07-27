@@ -22,4 +22,8 @@ d1:
     Fy: 0.05
     Fz: 0.05
   require_reference_certificate: true
-
+  require_acquisition_bandwidth: true
+  require_sampling_process: true
+  invalid_observation_policy_id: synthetic_retain_valid_rows_v1
+  exclusion_record_id: synthetic_no_exclusions_v1
+  exclusions_reviewed: true
