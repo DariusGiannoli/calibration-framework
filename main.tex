@@ -94,7 +94,50 @@ reference sensor and the triaxial sensor must also be known. If these
 conditions are not satisfied, the input--target pairs cannot be trusted for
 calibration.
 
-\subsection{D2: Domain Coverage}
+\subsection{Criterion D2: Domain Coverage}
+
+Domain coverage determines whether the achieved reference measurements
+represent the intended operating domain $\Omega$ with sufficient spatial
+resolution.
+
+Let the achieved reference points be
+\begin{equation}
+    \mathcal{S}_D
+    =
+    \left\{
+        \mathbf{q}_1,\ldots,\mathbf{q}_N
+    \right\}.
+\end{equation}
+
+The normalized distance between two points in $\Omega$ is
+\begin{equation}
+    d_{\Omega}(\mathbf{q},\mathbf{q}_i)
+    =
+    \sqrt{
+        \sum_{j=1}^{m}
+        \left(
+            \frac{q_j-q_{i,j}}
+                 {q_j^{\max}-q_j^{\min}}
+        \right)^2
+    },
+\end{equation}
+where $m$ is the dimension of the reference measurand.
+
+The fill distance of the dataset is
+\begin{equation}
+    h(D,\Omega)
+    =
+    \sup_{\mathbf{q}\in\Omega}
+    \min_{\mathbf{q}_i\in\mathcal{S}_D}
+    d_{\Omega}(\mathbf{q},\mathbf{q}_i).
+\end{equation}
+
+The dataset satisfies the domain-coverage requirement when
+\begin{equation}
+    h(D,\Omega)\leq h_{\max},
+\end{equation}
+where $h_{\max}$ is the declared maximum acceptable distance from any point in
+the intended domain to the nearest achieved calibration point.
 \subsection{D3: Informativeness and Identifiability}
 
 
@@ -371,5 +414,79 @@ tolerance, valid measurement ranges, coordinate transformation, and reference
 uncertainty limits remain to be defined from the acquisition-system
 specifications.
 \subsubsection{Application of D2}
+
+For the first application, the intended three-dimensional force domain is
+\begin{equation}
+    \Omega_1
+    =
+    [F_x^{\min},F_x^{\max}]
+    \times
+    [F_y^{\min},F_y^{\max}]
+    \times
+    [F_z^{\min},F_z^{\max}].
+\end{equation}
+
+Only samples that satisfy D1 are used. Their achieved reference-force vectors
+form the set
+\begin{equation}
+    \mathcal{S}_{D_1}
+    =
+    \left\{
+        \mathbf{q}_i
+        =
+        \begin{bmatrix}
+            F_{x,i}^{\mathrm{ref}} &
+            F_{y,i}^{\mathrm{ref}} &
+            F_{z,i}^{\mathrm{ref}}
+        \end{bmatrix}^{\mathsf{T}}
+        :
+        i\in\mathcal{I}_{\mathrm{valid}}
+    \right\},
+\end{equation}
+where $\mathcal{I}_{\mathrm{valid}}$ is the set of samples accepted by D1.
+
+The normalized distance in the triaxial force domain is
+\begin{equation}
+    d_{\Omega_1}(\mathbf{F},\mathbf{q}_i)
+    =
+    \sqrt{
+        \left(
+            \frac{F_x-F_{x,i}^{\mathrm{ref}}}
+                 {F_x^{\max}-F_x^{\min}}
+        \right)^2
+        +
+        \left(
+            \frac{F_y-F_{y,i}^{\mathrm{ref}}}
+                 {F_y^{\max}-F_y^{\min}}
+        \right)^2
+        +
+        \left(
+            \frac{F_z-F_{z,i}^{\mathrm{ref}}}
+                 {F_z^{\max}-F_z^{\min}}
+        \right)^2
+    }.
+\end{equation}
+
+Because the continuous domain cannot be checked directly, it is approximated
+using a sufficiently dense evaluation grid
+$\Gamma_{\Omega_1}\subset\Omega_1$. The estimated fill distance is
+\begin{equation}
+    \widehat{h}(D_1,\Omega_1)
+    =
+    \max_{\mathbf{F}\in\Gamma_{\Omega_1}}
+    \min_{\mathbf{q}_i\in\mathcal{S}_{D_1}}
+    d_{\Omega_1}(\mathbf{F},\mathbf{q}_i).
+\end{equation}
+
+The first dataset satisfies D2 when
+\begin{equation}
+    \widehat{h}(D_1,\Omega_1)
+    \leq
+    h_{\max,1}.
+\end{equation}
+
+The force limits, evaluation-grid resolution, and maximum acceptable fill
+distance $h_{\max,1}$ must be declared before assessing the collected
+trajectories.
 \subsubsection{Application of D3}
 \end{document}
