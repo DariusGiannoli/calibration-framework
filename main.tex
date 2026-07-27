@@ -105,6 +105,9 @@ reference sensor and the triaxial sensor must also be known. If these
 conditions are not satisfied, the input--target pairs cannot be trusted for
 calibration.
 
+\subsection{D2: Domain Coverage}
+\subsection{D3: Informativeness and Identifiability}
+
 
 
 
@@ -113,7 +116,7 @@ calibration.
 \newpage
 \section{Triaxial Force Sensor}
 
-\subsection{General Calibration Task}
+\subsection{General Triaxial Calibration Task}
 
 For the triaxial sensor, the calibration task is defined as follows:
 \begin{itemize}
@@ -308,4 +311,76 @@ mounting, using only its three sensing coils. The calibration task is
     where $u_0$ is the individual sensor being calibrated.
 \end{itemize}
 
+\subsubsection{Declared Calibration Task}
+
+\subsubsection{Application of D1}
+
+For the first application, each calibration observation must contain the three
+coil readings and the corresponding reference-force measurement:
+\begin{equation}
+    \mathbf{s}_i
+    =
+    \begin{bmatrix}
+        c_{1,i} & c_{2,i} & c_{3,i}
+    \end{bmatrix}^{\mathsf{T}},
+    \qquad
+    \mathbf{q}_i^{\mathrm{FT}}
+    =
+    \begin{bmatrix}
+        F_{x,i}^{\mathrm{FT}} &
+        F_{y,i}^{\mathrm{FT}} &
+        F_{z,i}^{\mathrm{FT}}
+    \end{bmatrix}^{\mathsf{T}}.
+\end{equation}
+
+The sensor and reference measurements must correspond to the same physical
+state. Their synchronization error is
+\begin{equation}
+    \Delta t_i
+    =
+    t_i^{s}-t_i^{\mathrm{FT}},
+\end{equation}
+and must satisfy
+\begin{equation}
+    \lvert\Delta t_i\rvert\leq\Delta t_{\max}.
+\end{equation}
+
+The reference force must be expressed in the triaxial sensor coordinate frame:
+\begin{equation}
+    \mathbf{q}_i
+    =
+    \mathbf{R}_{\mathrm{FT}\rightarrow\mathrm{sensor}}
+    \mathbf{q}_i^{\mathrm{FT}},
+\end{equation}
+where $\mathbf{R}_{\mathrm{FT}\rightarrow\mathrm{sensor}}$ is the known
+coordinate transformation.
+
+Every retained observation must satisfy
+\begin{equation}
+    \mathbf{s}_i\in\mathcal{S}_{\mathrm{valid}},
+    \qquad
+    \mathbf{q}_i^{\mathrm{FT}}\in\mathcal{Q}_{\mathrm{valid}},
+\end{equation}
+where $\mathcal{S}_{\mathrm{valid}}$ and $\mathcal{Q}_{\mathrm{valid}}$ are the
+valid measurement ranges of the coil-acquisition system and reference F/T
+sensor.
+
+The reference uncertainty for each force axis must also satisfy
+\begin{equation}
+    U_j^{\mathrm{FT}}
+    \leq
+    U_j^{\mathrm{FT,max}},
+    \qquad
+    j\in\{x,y,z\},
+\end{equation}
+where the maximum acceptable reference uncertainty is determined from the
+performance requirements $\mathcal{P}_1$.
+
+Samples containing missing values, corrupted packets, clipping, or saturation
+must be identified and excluded using a documented rule. The synchronization
+tolerance, valid measurement ranges, coordinate transformation, and reference
+uncertainty limits remain to be defined from the acquisition-system
+specifications.
+\subsubsection{Application of D2}
+\subsubsection{Application of D3}
 \end{document}
