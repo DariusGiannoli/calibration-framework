@@ -138,7 +138,56 @@ The dataset satisfies the domain-coverage requirement when
 \end{equation}
 where $h_{\max}$ is the declared maximum acceptable distance from any point in
 the intended domain to the nearest achieved calibration point.
-\subsection{D3: Informativeness and Identifiability}
+\subsection{Criterion D3: Informativeness and Identifiability}
+
+Informativeness determines whether the dataset contains enough independent
+variation to identify the declared calibration model $\mathcal{M}$ without
+ambiguity.
+
+For a parametric calibration model
+\begin{equation}
+    \widehat{\mathbf{q}}
+    =
+    f_{\boldsymbol{\theta}}(\mathbf{s}),
+    \qquad
+    \boldsymbol{\theta}\in\mathbb{R}^{p},
+\end{equation}
+define the dataset sensitivity matrix as
+\begin{equation}
+    \mathbf{J}_D
+    =
+    \begin{bmatrix}
+        \dfrac{\partial f_{\boldsymbol{\theta}}(\mathbf{s}_1)}
+              {\partial\boldsymbol{\theta}^{\mathsf{T}}}
+        \\
+        \vdots
+        \\
+        \dfrac{\partial f_{\boldsymbol{\theta}}(\mathbf{s}_N)}
+              {\partial\boldsymbol{\theta}^{\mathsf{T}}}
+    \end{bmatrix}.
+\end{equation}
+
+The model parameters are locally identifiable when
+\begin{equation}
+    \operatorname{rank}(\mathbf{J}_D)=p.
+\end{equation}
+
+Practical identifiability is evaluated using the condition number
+\begin{equation}
+    \kappa(\mathbf{J}_D)
+    =
+    \frac{\sigma_{\max}(\mathbf{J}_D)}
+         {\sigma_{\min}(\mathbf{J}_D)}.
+\end{equation}
+
+The dataset satisfies D3 when
+\begin{equation}
+    \operatorname{rank}(\mathbf{J}_D)=p,
+    \qquad
+    \kappa(\mathbf{J}_D)\leq\kappa_{\max},
+\end{equation}
+where $\kappa_{\max}$ is the maximum acceptable condition number after
+appropriate normalization of the model variables.
 
 
 
@@ -489,4 +538,110 @@ The force limits, evaluation-grid resolution, and maximum acceptable fill
 distance $h_{\max,1}$ must be declared before assessing the collected
 trajectories.
 \subsubsection{Application of D3}
+
+For the first application, the declared model is the affine calibration
+\begin{equation}
+    \widehat{\mathbf{q}}_i
+    =
+    \mathbf{A}\mathbf{s}_i+\mathbf{b},
+\end{equation}
+where $\mathbf{A}\in\mathbb{R}^{3\times3}$ and
+$\mathbf{b}\in\mathbb{R}^{3}$. The model therefore contains twelve parameters.
+
+Before evaluating conditioning, each coil signal is normalized:
+\begin{equation}
+    \widetilde{c}_{k,i}
+    =
+    \frac{
+        c_{k,i}-c_k^{\mathrm{mid}}
+    }{
+        \left(c_k^{\max}-c_k^{\min}\right)/2
+    },
+    \qquad
+    c_k^{\mathrm{mid}}
+    =
+    \frac{c_k^{\min}+c_k^{\max}}{2},
+\end{equation}
+for $k\in\{1,2,3\}$.
+
+For each calibration sample, define the feature vector
+\begin{equation}
+    \boldsymbol{\phi}_i
+    =
+    \begin{bmatrix}
+        1 &
+        \widetilde{c}_{1,i} &
+        \widetilde{c}_{2,i} &
+        \widetilde{c}_{3,i}
+    \end{bmatrix}^{\mathsf{T}}.
+\end{equation}
+
+The design matrix constructed from the samples accepted by D1 is
+\begin{equation}
+    \mathbf{X}_1
+    =
+    \begin{bmatrix}
+        \boldsymbol{\phi}_1^{\mathsf{T}}\\
+        \boldsymbol{\phi}_2^{\mathsf{T}}\\
+        \vdots\\
+        \boldsymbol{\phi}_{N_{\mathrm{fit}}}^{\mathsf{T}}
+    \end{bmatrix}
+    \in
+    \mathbb{R}^{N_{\mathrm{fit}}\times4}.
+\end{equation}
+
+Writing
+\begin{equation}
+    \mathbf{B}
+    =
+    \begin{bmatrix}
+        \mathbf{b} & \mathbf{A}
+    \end{bmatrix}
+    \in\mathbb{R}^{3\times4},
+\end{equation}
+the predicted force matrix is
+\begin{equation}
+    \widehat{\mathbf{Q}}
+    =
+    \mathbf{X}_1\mathbf{B}^{\mathsf{T}}.
+\end{equation}
+
+For the three-output affine model, the full sensitivity matrix is
+\begin{equation}
+    \mathbf{J}_{D_1}
+    =
+    \mathbf{I}_3\otimes\mathbf{X}_1,
+\end{equation}
+where $\otimes$ denotes the Kronecker product. Therefore,
+\begin{equation}
+    \operatorname{rank}(\mathbf{J}_{D_1})
+    =
+    3\operatorname{rank}(\mathbf{X}_1).
+\end{equation}
+
+All twelve affine-model parameters are identifiable if and only if
+\begin{equation}
+    \operatorname{rank}(\mathbf{X}_1)=4.
+\end{equation}
+
+The practical conditioning of the calibration is
+\begin{equation}
+    \kappa(\mathbf{X}_1)
+    =
+    \frac{\sigma_{\max}(\mathbf{X}_1)}
+         {\sigma_{\min}(\mathbf{X}_1)}.
+\end{equation}
+
+The first dataset satisfies D3 for the affine model when
+\begin{equation}
+    \operatorname{rank}(\mathbf{X}_1)=4,
+    \qquad
+    \kappa(\mathbf{X}_1)
+    \leq
+    \kappa_{\max,1}.
+\end{equation}
+
+The numerical rank tolerance and maximum acceptable condition number
+$\kappa_{\max,1}$ must be declared before evaluating the candidate calibration
+trajectories.
 \end{document}
