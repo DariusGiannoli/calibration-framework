@@ -5,6 +5,7 @@ from .d2_domain_coverage import evaluate_d2
 from .d3_informativeness import evaluate_d3
 from .d4_replication_dependence import evaluate_d4
 from .d5_leakage_resistant_validation import evaluate_d5
+from .d6_performance_uncertainty import evaluate_d6
 
 __all__ = [
     "evaluate_d1",
@@ -12,4 +13,5 @@ __all__ = [
     "evaluate_d3",
     "evaluate_d4",
     "evaluate_d5",
+    "evaluate_d6",
 ]

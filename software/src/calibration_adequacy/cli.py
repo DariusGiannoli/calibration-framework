@@ -15,6 +15,7 @@ from .criteria import (
     evaluate_d3,
     evaluate_d4,
     evaluate_d5,
+    evaluate_d6,
 )
 from .models import (
     CriterionStatus,
@@ -141,6 +142,26 @@ def _evaluate_d5(arguments: argparse.Namespace) -> int:
     }[result.status]
 
 
+def _evaluate_d6(arguments: argparse.Namespace) -> int:
+    bundle = load_task_bundle(arguments.task)
+    result = evaluate_d6(arguments.dataset, bundle)
+    rendered = json.dumps(result.model_dump(mode="json"), indent=2) + "\n"
+
+    if arguments.output:
+        output_path = Path(arguments.output).expanduser().resolve()
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(rendered, encoding="utf-8")
+        print(f"D6 evidence report: {output_path}")
+    else:
+        print(rendered, end="")
+
+    return {
+        CriterionStatus.PASS: 0,
+        CriterionStatus.FAIL: 1,
+        CriterionStatus.INDETERMINATE: 2,
+    }[result.status]
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="calibration-adequacy",
@@ -192,6 +213,15 @@ def build_parser() -> argparse.ArgumentParser:
     d5_parser.add_argument("--dataset", required=True, help="Path to dataset CSV.")
     d5_parser.add_argument("--output", help="Optional JSON evidence-report path.")
     d5_parser.set_defaults(handler=_evaluate_d5)
+
+    d6_parser = subparsers.add_parser(
+        "evaluate-d6",
+        help="Evaluate D6 performance precision and uncertainty for a CSV dataset.",
+    )
+    d6_parser.add_argument("--task", required=True, help="Path to task YAML.")
+    d6_parser.add_argument("--dataset", required=True, help="Path to dataset CSV.")
+    d6_parser.add_argument("--output", help="Optional JSON evidence-report path.")
+    d6_parser.set_defaults(handler=_evaluate_d6)
 
     schema_parser = subparsers.add_parser(
         "write-schemas",

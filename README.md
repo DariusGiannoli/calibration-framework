@@ -63,6 +63,18 @@ calibration-adequacy evaluate-d5 \
   --dataset software/examples/d5/synthetic_demo/data.csv
 ```
 
+## Evaluate the synthetic D6 example
+
+```bash
+calibration-adequacy evaluate-d6 \
+  --task software/examples/d6/synthetic_demo/task.yaml \
+  --dataset software/examples/d6/synthetic_demo/data.csv
+```
+
+D6 reports dataset adequacy for performance inference separately from
+calibration acceptance. A precise held-out result may therefore pass D6 while
+showing that the calibrated sensor fails a performance or uncertainty limit.
+
 Scientific `FAIL` and `INDETERMINATE` results use exit codes 1 and 2,
 respectively. Configuration/schema errors use exit code 3.
 

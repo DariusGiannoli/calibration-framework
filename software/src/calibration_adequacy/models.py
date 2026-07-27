@@ -309,6 +309,27 @@ class D5Requirements(StrictModel):
     data_use: Optional[D5DataUseEvidence] = None
 
 
+class D6AxisRequirements(StrictModel):
+    maximum_interval_half_width: Optional[float] = Field(default=None, ge=0)
+    maximum_rmse: Optional[float] = Field(default=None, ge=0)
+    calibrated_force_uncertainty: Optional[float] = Field(default=None, ge=0)
+    maximum_calibrated_force_uncertainty: Optional[float] = Field(
+        default=None,
+        ge=0,
+    )
+
+
+class D6Requirements(StrictModel):
+    metric: Literal["rmse"]
+    confidence_level: Optional[float] = Field(default=None, gt=0, lt=1)
+    bootstrap_repetitions: Optional[int] = Field(default=None, ge=100)
+    bootstrap_random_seed: Optional[int] = Field(default=None, ge=0)
+    bootstrap_unit: Literal["run"]
+    minimum_bootstrap_units: Optional[int] = Field(default=None, ge=2)
+    uncertainty_method_id: Optional[str] = Field(default=None, min_length=1)
+    axes: Dict[str, D6AxisRequirements] = Field(default_factory=dict)
+
+
 class TaskConfig(StrictModel):
     schema_version: str = "0.1"
     task_id: str
@@ -319,6 +340,7 @@ class TaskConfig(StrictModel):
     d3: Optional[D3Requirements] = None
     d4: Optional[D4Requirements] = None
     d5: Optional[D5Requirements] = None
+    d6: Optional[D6Requirements] = None
 
 
 class TaskBundle(StrictModel):

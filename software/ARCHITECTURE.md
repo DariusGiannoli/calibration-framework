@@ -148,3 +148,35 @@ that undeclared external experiments never accessed the test data.
 D5 requires D1 and the D3 model declaration, but it does not require D2, D3, or
 D4 to pass. D4 independently determines whether labels represent genuinely
 independent runs.
+
+## D6 implementation
+
+D6 evaluates whether the held-out runs support sufficiently precise performance
+claims and then separately reports whether the calibration meets the declared
+requirements. It:
+
+- requires D5 to return `PASS`;
+- reuses the frozen development/test run partition and affine model;
+- fits on development runs once and never refits during bootstrap;
+- resamples complete held-out runs with replacement using a declared seed;
+- calculates percentile confidence intervals for per-axis held-out RMSE;
+- compares interval half-widths with the declared precision limits; and
+- compares confidence-interval upper bounds and calibrated-force uncertainty
+  estimates with their separate acceptance limits.
+
+The top-level D6 criterion status represents **dataset adequacy for performance
+inference**. Calibration acceptance is reported independently in
+`metrics.calibration_acceptance_status`. Consequently, a narrow confidence
+interval showing that RMSE exceeds its limit produces a D6 dataset-adequacy
+`PASS` and a calibration-acceptance `FAIL`.
+
+At least two independent held-out runs are required by the D6 schema, and the
+application may declare a larger minimum. The bootstrap repetition count and
+random seed are recorded so the evidence is reproducible.
+
+The initial evaluator does not derive calibrated-force uncertainty from raw
+measurements. It requires a declared uncertainty-method identifier and
+per-axis uncertainty estimates, then checks those estimates against the
+application limits. A future uncertainty-model adapter can calculate these
+quantities without changing the separation between evidence precision and
+calibration acceptance.

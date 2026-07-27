@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import csv
 import hashlib
 import json
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
-
-import numpy as np
+from typing import Any, Dict, List, Optional, Union
 
 from ..models import (
     CriterionResult,
@@ -16,6 +13,7 @@ from ..models import (
     TaskBundle,
     Violation,
 )
+from ._heldout_affine import evaluate_affine_holdout, load_model_arrays
 from .d1_measurement_reference import evaluate_d1
 
 MAX_REPORTED_VIOLATIONS = 50
@@ -120,47 +118,6 @@ def _split_manifest_sha256(
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _load_model_arrays(
-    path: Path,
-    bundle: TaskBundle,
-    run_id_column: str,
-    input_channels: List[str],
-    output_channels: List[str],
-) -> Tuple[List[str], np.ndarray, np.ndarray]:
-    input_columns = [
-        bundle.task.dataset_mapping.sensor_channels[channel]
-        for channel in input_channels
-    ]
-    output_columns = [
-        bundle.task.dataset_mapping.reference_channels[channel]
-        for channel in output_channels
-    ]
-    units: List[str] = []
-    inputs: List[Tuple[float, ...]] = []
-    references: List[Tuple[float, ...]] = []
-
-    with path.open("r", encoding="utf-8", newline="") as stream:
-        reader = csv.DictReader(stream)
-        for row in reader:
-            units.append((row[run_id_column] or "").strip())
-            inputs.append(tuple(float(row[column]) for column in input_columns))
-            references.append(
-                tuple(float(row[column]) for column in output_columns)
-            )
-
-    rotation = np.asarray(
-        bundle.setup.reference_to_sensor_rotation,
-        dtype=float,
-    )
-    reference_array = np.asarray(references, dtype=float)
-    rotated_references = reference_array @ rotation.T
-    return (
-        units,
-        np.asarray(inputs, dtype=float),
-        rotated_references,
-    )
-
-
 def evaluate_d5(
     dataset_path: Union[str, Path],
     bundle: TaskBundle,
@@ -259,7 +216,7 @@ def evaluate_d5(
             violations=dimension_violations,
         )
 
-    units, sensor_inputs, reference_outputs = _load_model_arrays(
+    units, _, _ = load_model_arrays(
         path,
         bundle,
         run_id_column,
@@ -450,51 +407,26 @@ def evaluate_d5(
             violations=violations,
         )
 
-    development_mask = np.asarray(
-        [unit in development_set for unit in units],
-        dtype=bool,
+    evaluation = evaluate_affine_holdout(
+        path,
+        bundle,
+        development_units,
+        test_units,
     )
-    test_mask = np.asarray(
-        [unit in test_set for unit in units],
-        dtype=bool,
-    )
-    development_inputs = sensor_inputs[development_mask]
-    development_references = reference_outputs[development_mask]
-    test_inputs = sensor_inputs[test_mask]
-    test_references = reference_outputs[test_mask]
-
-    development_design = np.column_stack(
-        (
-            np.ones(development_inputs.shape[0], dtype=float),
-            development_inputs,
-        )
-    )
-    coefficients, _, design_rank, singular_values = np.linalg.lstsq(
-        development_design,
-        development_references,
-        rcond=None,
-    )
-    test_design = np.column_stack(
-        (
-            np.ones(test_inputs.shape[0], dtype=float),
-            test_inputs,
-        )
-    )
-    test_predictions = test_design @ coefficients
-    test_errors = test_predictions - test_references
-    rmse = np.sqrt(np.mean(np.square(test_errors), axis=0))
-    coefficient_matrix = coefficients.T
+    coefficient_matrix = evaluation.coefficients.T
 
     metrics.update(
         {
-            "development_sample_count": int(development_inputs.shape[0]),
-            "test_sample_count": int(test_inputs.shape[0]),
-            "development_design_rank": int(design_rank),
+            "development_sample_count": int(
+                evaluation.development_inputs.shape[0]
+            ),
+            "test_sample_count": int(evaluation.test_inputs.shape[0]),
+            "development_design_rank": evaluation.design_rank,
             "development_design_required_rank": int(
-                development_design.shape[1]
+                evaluation.development_design.shape[1]
             ),
             "development_design_singular_values": [
-                float(value) for value in singular_values
+                float(value) for value in evaluation.singular_values
             ],
             "estimated_intercept": {
                 channel: float(coefficient_matrix[index, 0])
@@ -505,7 +437,7 @@ def evaluate_d5(
                 for row in coefficient_matrix[:, 1:]
             ],
             "test_rmse": {
-                channel: float(rmse[index])
+                channel: float(evaluation.test_rmse[index])
                 for index, channel in enumerate(output_channels)
             },
             "performance_threshold_applied": False,

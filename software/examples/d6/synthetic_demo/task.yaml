@@ -1,0 +1,92 @@
+# Complete synthetic D6 task used for examples and automated tests.
+schema_version: "0.1"
+task_id: synthetic_triaxial_d6
+profiles:
+  sensor: ../../d1/synthetic_demo/sensor.yaml
+  reference: ../../d1/synthetic_demo/reference.yaml
+  setup: ../../d1/synthetic_demo/setup.yaml
+dataset_mapping:
+  sensor_timestamp_column: sensor_time_s
+  reference_timestamp_column: reference_time_s
+  run_id_column: run_id
+  configuration_id_column: null
+  sensor_channels:
+    c1: c1
+    c2: c2
+    c3: c3
+  reference_channels:
+    Fx: Fx_ref
+    Fy: Fy_ref
+    Fz: Fz_ref
+d1:
+  maximum_reference_uncertainty:
+    Fx: 0.05
+    Fy: 0.05
+    Fz: 0.05
+  require_reference_certificate: true
+d3:
+  model_type: affine
+  input_channels:
+    - c1
+    - c2
+    - c3
+  output_dimension: 3
+  normalization:
+    c1:
+      minimum: -1.0
+      maximum: 1.0
+    c2:
+      minimum: -1.0
+      maximum: 1.0
+    c3:
+      minimum: -1.0
+      maximum: 1.0
+  relative_rank_tolerance: 1.0e-12
+  maximum_condition_number: 10.0
+d5:
+  validation_unit: run
+  model_source: task.d3
+  development_units:
+    - development_01
+    - development_02
+    - development_03
+  test_units:
+    - test_01
+    - test_02
+    - test_03
+    - test_04
+  minimum_test_units: 4
+  split_manifest_id: synthetic_run_split_d6_v1
+  split_frozen_before_development: true
+  data_use:
+    data_dependent_preprocessing: development_only
+    model_selection: development_only
+    parameter_estimation: development_only
+    performance_threshold_selection: development_only
+    final_performance_evaluation: test_only
+    model_locked_before_test_evaluation: true
+    test_results_used_for_further_development: false
+d6:
+  metric: rmse
+  confidence_level: 0.95
+  bootstrap_repetitions: 2000
+  bootstrap_random_seed: 20260727
+  bootstrap_unit: run
+  minimum_bootstrap_units: 4
+  uncertainty_method_id: synthetic_uncertainty_model_v1
+  axes:
+    Fx:
+      maximum_interval_half_width: 0.03
+      maximum_rmse: 0.08
+      calibrated_force_uncertainty: 0.02
+      maximum_calibrated_force_uncertainty: 0.05
+    Fy:
+      maximum_interval_half_width: 0.03
+      maximum_rmse: 0.08
+      calibrated_force_uncertainty: 0.025
+      maximum_calibrated_force_uncertainty: 0.05
+    Fz:
+      maximum_interval_half_width: 0.03
+      maximum_rmse: 0.08
+      calibrated_force_uncertainty: 0.03
+      maximum_calibrated_force_uncertainty: 0.05

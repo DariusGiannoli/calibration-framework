@@ -103,3 +103,27 @@ d5:
     final_performance_evaluation: null
     model_locked_before_test_evaluation: null
     test_results_used_for_further_development: null
+d6:
+  metric: rmse
+  confidence_level: null
+  bootstrap_repetitions: null
+  bootstrap_random_seed: null
+  bootstrap_unit: run
+  minimum_bootstrap_units: null
+  uncertainty_method_id: null
+  axes:
+    Fx:
+      maximum_interval_half_width: null
+      maximum_rmse: null
+      calibrated_force_uncertainty: null
+      maximum_calibrated_force_uncertainty: null
+    Fy:
+      maximum_interval_half_width: null
+      maximum_rmse: null
+      calibrated_force_uncertainty: null
+      maximum_calibrated_force_uncertainty: null
+    Fz:
+      maximum_interval_half_width: null
+      maximum_rmse: null
+      calibrated_force_uncertainty: null
+      maximum_calibrated_force_uncertainty: null
