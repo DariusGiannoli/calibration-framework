@@ -1,22 +1,13 @@
 \documentclass[11pt,a4paper]{article}
 
-% ---------------------------------------------------------------------------
-% Packages
-% ---------------------------------------------------------------------------
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[margin=25mm]{geometry}
-\usepackage{amsmath,amssymb}
-\usepackage{booktabs}
 \usepackage{enumitem}
 \usepackage[protrusion=true,expansion=false]{microtype}
 \usepackage[hidelinks]{hyperref}
 
-% ---------------------------------------------------------------------------
-% Document metadata
-% ---------------------------------------------------------------------------
-\title{An Evidence-Based Framework for Assessing Calibration Experiment and
-Dataset Adequacy}
+\title{Calibration Dataset Adequacy Framework\\Working Research Plan}
 \author{}
 \date{\today}
 
@@ -24,283 +15,102 @@ Dataset Adequacy}
 
 \maketitle
 
-\begin{abstract}
-This work aims to develop and evaluate an evidence-based framework for
-assessing, relative to a declared calibration claim, whether a planned
-experimental protocol or an achieved dataset provides the evidence required
-for calibration-model development and independent, leakage-resistant
-performance evaluation. The framework defines sensor-agnostic evidence
-obligations and translates them into sensor-, model-, and application-specific
-tests. It distinguishes prospective assessment of an experimental protocol
-from retrospective assessment of the data that the experiment actually
-produced and reports criterion-level conclusions and diagnostics rather than
-claiming unconditional dataset sufficiency.
-\end{abstract}
+\section{Objective}
 
-\section{Introduction}
+The objective is to develop a practical framework for assessing whether a
+planned experiment or a collected dataset is adequate for calibrating a sensor
+for a declared use.
 
-% TODO: Introduce the calibration-dataset adequacy problem, its importance,
-% and the limitations of relying only on trajectory names, sample counts, or
-% aggregate calibration errors.
+Adequacy is not absolute. It depends on what the sensor must measure, the
+intended operating range and conditions, the calibration method, the required
+performance, and the situations in which the calibrated sensor is expected to
+work.
 
-\section{Research Objective}
+\section{Central Research Question}
 
-The objective of this work is to develop and evaluate an evidence-based
-calibration-adequacy framework that assesses, relative to a declared
-calibration claim, whether a planned experimental protocol or an achieved
-dataset provides the evidence required to support identifiable and practically
-estimable calibration-model development, together with independent and
-leakage-resistant evaluation of calibration performance over the intended
-operating domain and conditions.
+\begin{quote}
+Given a calibration objective, how can we determine whether an experimental
+protocol or dataset provides enough appropriate evidence to develop and
+evaluate a viable sensor calibration?
+\end{quote}
 
-The framework defines sensor-agnostic evidence obligations and translates them
-into sensor-, model-, and application-specific assessment tests. It reports
-criterion-level outcomes and diagnostics rather than claiming unconditional
-dataset sufficiency.
+\section{Proposed Framework}
 
-Dataset adequacy is not an absolute property. It must be evaluated relative to
-a declared calibration claim, denoted by
-\begin{equation}
-    \mathcal{K}
-    =
-    \left(
-        \mathbf{q},
-        \mathbf{s},
-        \Omega,
-        \mathcal{C},
-        \mathcal{M},
-        \mathcal{P},
-        \mathcal{G}
-    \right),
-    \label{eq:calibration-claim}
-\end{equation}
-where
-\begin{description}[style=nextline,leftmargin=18mm]
-    \item[$\mathbf{q}$] is the reference measurand to be estimated;
-    \item[$\mathbf{s}$] is the vector of raw sensor indications used as
-        calibration inputs;
-    \item[$\Omega$] is the intended operating domain;
-    \item[$\mathcal{C}$] is the set of relevant operating and experimental
-        conditions;
-    \item[$\mathcal{M}$] is the declared calibration-model class;
-    \item[$\mathcal{P}$] is the set of required performance and uncertainty
-        criteria; and
-    \item[$\mathcal{G}$] is the intended generalization claim.
-\end{description}
-
-For an achieved dataset \(D\), the assessment target is therefore
-\begin{equation}
-    \operatorname{Adequacy}\left(D \mid \mathcal{K}\right).
-    \label{eq:conditional-adequacy}
-\end{equation}
-The framework does not ask whether \(D\) is sufficient in isolation. It asks
-which declared calibration claims \(D\) supports, which it contradicts, and
-which remain indeterminate.
-
-\subsection{Research sub-objectives}
-
+The framework will contain two levels:
 \begin{enumerate}
-    \item Derive the fundamental evidence obligations that apply across sensor
-        calibration problems.
-    \item Define how these obligations are operationalized for different sensor
-        behaviours and classes of calibration models.
-    \item Establish prospective and retrospective assessment procedures with
-        explicit decision semantics.
-    \item Evaluate the framework through controlled comparisons of calibration
-        trajectories and a triaxial force-sensor case study.
+    \item \textbf{Universal requirements}: questions that should be considered
+        in any sensor-calibration experiment.
+    \item \textbf{Specific requirements}: tests that depend on the sensor
+        physics, calibration model, application, and expected operating
+        conditions.
 \end{enumerate}
 
-\section{Assessment Problem}
-
-\subsection{Prospective assessment}
-
-Before data collection, the framework evaluates whether a planned experimental
-protocol \(\Pi\) is reasonably capable of producing the evidence required by
-the declared calibration claim:
-\begin{equation}
-    A_{\mathrm{plan}}\left(\Pi \mid \mathcal{K}\right).
-    \label{eq:prospective-assessment}
-\end{equation}
-This assessment may use the intended operating domain, commanded trajectories,
-sampling procedure, reference system, repetitions, operating conditions, and
-candidate model class. Because the achieved reference quantities and sensor
-responses are not yet available, this assessment remains conditional and
-cannot establish achieved dataset adequacy.
-
-\subsection{Retrospective assessment}
-
-After data collection, the framework evaluates whether the experiment actually
-produced the required evidence:
-\begin{equation}
-    A_{\mathrm{data}}\left(D \mid \mathcal{K}\right).
-    \label{eq:retrospective-assessment}
-\end{equation}
-This assessment must use the achieved, synchronized reference measurements and
-raw sensor indications, together with the relevant run, time, and
-operating-condition information.
-
-\section{Working Definition of Adequacy}
-
-A calibration dataset is considered adequate only when it provides sufficient
-evidence that the calibration problem is:
-\begin{enumerate}[label=(\Alph*)]
-    \item \textbf{learnable}: the measurements contain enough information to
-        distinguish the measurand components and estimate the declared model;
-    \item \textbf{representative}: the intended operating domain and relevant
-        experimental conditions are represented; and
-    \item \textbf{validatable}: the experimental design supports an independent
-        and unbiased evaluation of the resulting calibration.
-\end{enumerate}
-
-At the highest level, this working definition can be written as
-\begin{equation}
-    \operatorname{Adequate}\left(D \mid \mathcal{K}\right)
-    =
-    \operatorname{Learnable}\left(D \mid \mathcal{K}\right)
-    \land
-    \operatorname{Representative}\left(D \mid \mathcal{K}\right)
-    \land
-    \operatorname{Validatable}\left(D \mid \mathcal{K}\right).
-    \label{eq:adequacy-components}
-\end{equation}
-
-Equations~\eqref{eq:conditional-adequacy}
-and~\eqref{eq:adequacy-components} define the scope of the framework; the
-individual criteria developed in the following sections will make these
-concepts testable.
-
-\section{Framework Architecture}
-
-\subsection{Universal requirements}
-
-The universal layer defines questions that every calibration study must
-address, independently of sensor technology. These questions concern the
-calibration claim, reference validity, informativeness, domain coverage,
-experimental dependence, validation, performance, uncertainty, and
-reproducibility.
-
-\subsection{Sensor- and model-specific requirements}
-
-The second layer translates the universal requirements into tests appropriate
-to the sensor physics and calibration-model family. For example, an affine
-model may require design-matrix rank and conditioning tests, whereas a dynamic
-or hysteretic model requires evidence about temporal excitation and loading
-history.
-
-\section{Decision Semantics}
-
-Each requirement shall produce an evidence-backed result rather than an
-unsupported aggregate score:
-\begin{description}[leftmargin=35mm,style=sameline]
-    \item[\textsc{Pass}] the available evidence satisfies the declared
-        requirement;
-    \item[\textsc{Fail}] the available evidence contradicts or does not satisfy
-        the requirement;
-    \item[\textsc{Indeterminate}] the required evidence is missing or
-        insufficient for a defensible decision;
-    \item[\textsc{Not Applicable}] the requirement does not apply under the
-        declared calibration claim.
-\end{description}
-
-For \(J\) framework requirements, either assessment may be represented as
-\begin{equation}
-    A(\,\cdot\mid\mathcal{K})
-    \longrightarrow
-    \left\{
-        \textsc{Pass},
-        \textsc{Fail},
-        \textsc{Indeterminate},
-        \textsc{Not Applicable}
-    \right\}^{J}
-    +
-    \text{diagnostic evidence}.
-    \label{eq:assessment-output}
-\end{equation}
-
-Every result should report the evaluated question, required evidence,
-assumptions, assessment method, result, justification, consequence for the
-calibration claim, and any recommended corrective action.
-
-\section{Scope of the Claims}
-
-The framework is intended to provide a transparent and reproducible method for
-determining what the available evidence supports, what it contradicts, and what
-remains indeterminate. It does not claim to:
+The initial candidate requirement families are:
 \begin{itemize}
-    \item prove unconditional sufficiency from a finite dataset;
-    \item prescribe a single numerical threshold suitable for every sensor;
-    \item guarantee that a particular model will achieve a required error;
-    \item identify a universally optimal calibration trajectory; or
-    \item assume that any named trajectory family is adequate by construction.
+    \item a clearly declared calibration objective and intended use;
+    \item valid sensor and reference measurements;
+    \item sufficient information to learn the required relationships;
+    \item adequate coverage of the intended operating domain;
+    \item appropriate variation, repetitions, and experimental independence;
+    \item validation without data leakage;
+    \item performance and uncertainty appropriate for the application; and
+    \item reproducible data collection, analysis, and reporting.
 \end{itemize}
 
-\section{Candidate Calibration-Adequacy Criteria}
+These are working categories. Each one must later be justified using existing
+literature, mathematics, physical reasoning, and experimental evidence.
 
-The following criterion families are placeholders for step-by-step derivation,
-literature support, mathematical formulation, and validation.
+\section{Two Uses of the Framework}
 
-\subsection{Calibration Claim and Intended Use}
-% TODO: Define the measurand, domain, conditions, model family, performance
-% target, and generalization claim that make adequacy assessable.
+\subsection{Before data collection}
 
-\subsection{Measurement and Reference Validity}
-% TODO: Define requirements for synchronization, traceability, reference
-% uncertainty, sensor integrity, data integrity, and preprocessing provenance.
+Assess whether a proposed protocol is capable of producing the evidence needed
+for calibration. This can guide the choice of trajectories, loading conditions,
+repetitions, and validation runs.
 
-\subsection{Informativeness and Identifiability}
-% TODO: Define independent excitation, structural identifiability, practical
-% conditioning, sensor distinguishability, and model-dependent tests.
+\subsection{After data collection}
 
-\subsection{Domain Coverage}
-% TODO: Define intended and achieved support, joint coverage, boundary
-% representation, unsupported regions, and extrapolation policy.
+Assess whether the experiment actually produced a viable dataset using the
+achieved reference measurements, raw sensor signals, run information, and
+experimental conditions.
 
-\subsection{Variability, Dependence, and Experimental Units}
-% TODO: Define repetitions, temporal dependence, run-level grouping,
-% nuisance-condition variation, and effective independent information.
-
-\subsection{Validation Adequacy}
-% TODO: Define leakage-resistant partitioning, independent validation,
-% interpolation and extrapolation tests, and prospective split design.
-
-\subsection{Performance and Uncertainty}
-% TODO: Define application-relevant metrics, regional errors, uncertainty,
-% tolerances, failure modes, and acceptance thresholds.
-
-\subsection{Reproducibility and Reporting}
-% TODO: Define the minimum data, metadata, protocol, code, versioning, and
-% reporting evidence required to reproduce an adequacy assessment.
-
-\section{Research Questions}
-
-\begin{enumerate}
-    \item Which calibration-dataset adequacy requirements are universal?
-    \item Which requirements depend on the sensor physics or calibration-model
-        class?
-    \item Which requirements can be assessed before data collection, and which
-        require achieved sensor and reference measurements?
-    \item How should insufficient or missing evidence be represented?
-    \item How can competing calibration trajectories be compared under a common
-        experimental budget?
-    \item Can the framework predict calibration viability in a real triaxial
-        sensor case study?
-\end{enumerate}
+For each requirement, the framework should explain whether the available
+evidence passes, fails, or is insufficient to decide, and why.
 
 \section{Triaxial Sensor Case Study}
 
-% TODO: Instantiate the framework for the three-coil, three-axis force sensor.
-% Candidate trajectories such as uniaxial sweeps, spirals, and Lissajous curves
-% are evaluated here; they are not assumptions of the universal framework.
+The general framework will be applied to the calibration of the triaxial force
+sensor. It will be used to assess candidate combinations of calibration
+trajectories, including uniaxial tests, spirals, and Lissajous curves.
 
-\section{Discussion}
+The objective is not to assume that these trajectories are sufficient. The
+objective is to use the framework to determine what they can identify, which
+parts of the operating domain they represent, what evidence they do not
+provide, and whether additional experiments are required.
 
-% TODO: Discuss the scope of the conclusions, limitations of finite
-% experiments, model dependence, and the distinction between necessary and
-% sufficient evidence.
+\section{Proposed Work Plan}
 
-\section{Conclusion}
+\begin{enumerate}
+    \item Confirm the objective and scope of the framework.
+    \item Derive and justify the universal requirement families.
+    \item Translate each requirement into practical, model- or sensor-specific
+        tests.
+    \item Compare candidate experimental protocols before collecting data.
+    \item collect the triaxial sensor data and assess the achieved dataset; and
+    \item calibrate the sensor and evaluate whether the framework's conclusions
+        are supported by independent validation results.
+\end{enumerate}
 
-% TODO: Summarize the derived framework, its validation, and the conclusions
-% supported by the triaxial case study.
+\section{Points to Discuss with the Supervisor}
+
+\begin{itemize}
+    \item Is the objective aligned with the intended research contribution?
+    \item Should the framework assess both planned protocols and collected
+        datasets?
+    \item How general should the universal part of the framework be?
+    \item Is the triaxial sensor intended as the principal validation case?
+    \item What level of mathematical proof and experimental validation is
+        expected?
+\end{itemize}
 
 \end{document}
