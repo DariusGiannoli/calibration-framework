@@ -69,20 +69,9 @@ For an acquired dataset $D$, adequacy is therefore conditional:
 \subsection{Criterion D1: Measurement and Reference Validity}
 
 The dataset must contain trustworthy pairs of sensor readings and reference
-forces. For each sample $i$,
+measurements. For each sample $i$,
 \begin{equation}
     \left(\mathbf{s}_i,\mathbf{q}_i\right)
-    =
-    \left(
-    \begin{bmatrix}
-        c_{1,i} & c_{2,i} & c_{3,i}
-    \end{bmatrix}^{\mathsf{T}},
-    \begin{bmatrix}
-        F_{x,i}^{\mathrm{ref}} &
-        F_{y,i}^{\mathrm{ref}} &
-        F_{z,i}^{\mathrm{ref}}
-    \end{bmatrix}^{\mathsf{T}}
-    \right)
 \end{equation}
 must represent the same physical state.
 
@@ -212,6 +201,8 @@ For the triaxial sensor, the calibration task is defined as follows:
 \newpage
 \subsection{First Application: Affine Calibration Under Rigid Mounting}
 
+\subsubsection{Declared Calibration Task}
+
 The first application considers one individual triaxial sensor under rigid
 mounting, using only its three sensing coils. The calibration task is
 \begin{equation}
@@ -282,7 +273,7 @@ mounting, using only its three sensing coils. The calibration task is
         },
     \end{equation}
     where $N_{\mathrm{val}}$ is the number of independent validation samples.
-    The initial performance requirements are
+    The proposed form of the initial performance requirements is
     \begin{equation}
         \mathcal{P}_1
         =
@@ -310,8 +301,6 @@ mounting, using only its three sensing coils. The calibration task is
     \end{equation}
     where $u_0$ is the individual sensor being calibrated.
 \end{itemize}
-
-\subsubsection{Declared Calibration Task}
 
 \subsubsection{Application of D1}
 
