@@ -61,7 +61,7 @@ where:
     \item $\Omega$ is the intended operating domain;
     \item $\mathcal{C}$ is the set of relevant operating conditions;
     \item $\mathcal{M}$ is the calibration model or candidate model family;
-    \item $\mathcal{P}$ is the required performance and uncertainty; and
+    \item $\mathcal{P}$ is the required performance and uncertainty;
     \item $\mathcal{G}$ is the intended generalization claim.
 \end{itemize}
 
@@ -73,194 +73,95 @@ For an acquired dataset $D$, adequacy is therefore conditional:
 \section{Trixial Force Sensor (under rigid mounting)}
 
 \subsection{Adequacy Definition}
+\begin{itemize}
+    \item $\mathbf{s}$ is the sensor reading vector:
+    \begin{equation}
+        \mathbf{s}
+        =
+        \begin{bmatrix}
+            c_1 & c_2 & c_3
+        \end{bmatrix}^{\mathsf{T}},
+    \end{equation}
+    where $c_1$, $c_2$, and $c_3$ are the three raw coil signals.
+    The vector $\mathbf{s}$ is the input of the calibration model.
 
-For the first calibration stage, the sensor input and reference output are
-\begin{equation}
-    \mathbf{s}
-    =
-    \begin{bmatrix}
-        c_1 & c_2 & c_3
-    \end{bmatrix}^{\mathsf{T}}
-    \in \mathcal{S} \subseteq \mathbb{R}^{3},
-    \qquad
-    \mathbf{F}
-    =
-    \begin{bmatrix}
-        F_x & F_y & F_z
-    \end{bmatrix}^{\mathsf{T}}
-    \in \mathbb{R}^{3}.
-\end{equation}
+    \item $\mathbf{q}$ is the reference force vector:
+    \begin{equation}
+        \mathbf{q}
+        =
+        \begin{bmatrix}
+            F_x^{\mathrm{ref}} &
+            F_y^{\mathrm{ref}} &
+            F_z^{\mathrm{ref}}
+        \end{bmatrix}^{\mathsf{T}},
+    \end{equation}
+    where the three force components are measured by the reference
+    force/torque sensor. The vector $\mathbf{q}$ is the desired output of the
+    calibration model and is used as the calibration target.
 
-The calibration model estimates the reference force according to
-\begin{equation}
-    \widehat{\mathbf{F}} = f_{\boldsymbol{\theta}}(\mathbf{s}),
-\end{equation}
-where $f_{\boldsymbol{\theta}}$ is a candidate calibration model with
-parameters $\boldsymbol{\theta}$.
-
-\subsubsection{Intended Force Domain}
-
-The intended three-dimensional force domain is the set of force vectors for
-which the calibration will be claimed:
+    \item $\Omega$ is the intended operating domain of the sensor. It defines the
+set of three-dimensional force vectors for which the calibration is expected
+to be valid:
 \begin{equation}
     \Omega
     =
-    \left\{
-        \mathbf{F} \in \mathbb{R}^{3}
-        \;\middle|\;
-        \mathbf{F}^{-}
-        \preceq
-        \mathbf{F}
-        \preceq
-        \mathbf{F}^{+},
-        \quad
-        h_k(\mathbf{F}) \leq 0,
-        \quad k=1,\ldots,K
-    \right\}.
+    [F_x^{\min},F_x^{\max}]
+    \times
+    [F_y^{\min},F_y^{\max}]
+    \times
+    [F_z^{\min},F_z^{\max}]
+    \subseteq \mathbb{R}^{3}.
 \end{equation}
+The force limits must be selected according to the intended application.
+They remain to be defined for the triaxial sensor.
 
-Here,
-\begin{equation}
-    \mathbf{F}^{-}
-    =
-    \begin{bmatrix}
-        F_x^{-} & F_y^{-} & F_z^{-}
-    \end{bmatrix}^{\mathsf{T}},
-    \qquad
-    \mathbf{F}^{+}
-    =
-    \begin{bmatrix}
-        F_x^{+} & F_y^{+} & F_z^{+}
-    \end{bmatrix}^{\mathsf{T}},
-\end{equation}
-are the lower and upper force limits, and $\preceq$ denotes component-wise
-inequality. The functions $h_k$ represent any coupled physical or
-application-specific restrictions on valid force combinations. If no such
-restrictions are declared, $K=0$ and $\Omega$ is the rectangular domain defined
-only by the force limits.
-
-\subsubsection{Mounting and Operating Conditions}
-
-Let
-\begin{equation}
-    \mathbf{z}
-    =
-    \begin{bmatrix}
-        z_1 & z_2 & \cdots & z_r
-    \end{bmatrix}^{\mathsf{T}}
-\end{equation}
-represent the operating-condition variables that may affect the sensor
-response. Their declared domain is
+\item $\mathcal{C}$ is the set of operating conditions that affect the sensor response under which the calibration is expected to be valid:
 \begin{equation}
     \mathcal{C}
     =
-    \mathcal{C}_1
+    \mathcal{C}_{\mathrm{mount}}(rigid)
     \times
-    \mathcal{C}_2
+    \mathcal{C}_{\mathrm{temperature}}
     \times
-    \cdots
-    \times
-    \mathcal{C}_r.
+    \mathcal{C}_{\mathrm{rate}}.
 \end{equation}
 
-For the first triaxial calibration stage, a possible parameterization is
-\begin{equation}
-    \mathbf{z}
-    =
-    \left(
-        m,
-        T,
-        \dot{\mathbf{F}},
-        h
-    \right),
-\end{equation}
-where $m$ is the mounting configuration, $T$ is temperature,
-$\dot{\mathbf{F}}$ is loading rate, and $h$ represents relevant loading
-history. The corresponding condition set may be written as
-\begin{equation}
-    \mathcal{C}
-    =
-    \left\{m_{\mathrm{rigid}}\right\}
-    \times
-    \left[T^{-},T^{+}\right]
-    \times
-    \mathcal{V}
-    \times
-    \mathcal{H},
-\end{equation}
-where $\mathcal{V}$ is the allowed set of loading rates and $\mathcal{H}$ is
-the allowed set of loading histories. A condition variable should be retained
-only if it is relevant to the intended calibration claim.
+The relevant temperature and loading-rate ranges remain to be defined.
 
-\subsubsection{Candidate Calibration Models}
-
-The candidate model family is
+\item $\mathcal{M}$ is the calibration model or candidate model family defining the mathematical mappings considered for converting the sensor signals
+$\mathbf{s}$ into an estimated force vector $\widehat{\mathbf{q}}$:
 \begin{equation}
     \mathcal{M}
     =
-    \bigcup_{k \in \mathcal{K}} \mathcal{M}_k,
-    \qquad
-    \mathcal{M}_k
-    =
     \left\{
-        f_{k,\boldsymbol{\theta}}
+        f_{\boldsymbol{\theta}} :
+        \mathbf{s} \mapsto \widehat{\mathbf{q}}
         \;\middle|\;
-        \boldsymbol{\theta} \in \Theta_k
+        \boldsymbol{\theta} \in \Theta
     \right\},
 \end{equation}
-where $\mathcal{M}_k$ is a model class and $\Theta_k$ is its parameter space.
+where $\boldsymbol{\theta}$ represents the model parameters and $\Theta$ is
+their allowed parameter space.
 
-The initial memoryless affine model class is
+The first candidate model is an affine linear calibration:
 \begin{equation}
-    \mathcal{M}_{\mathrm{affine}}
+    \widehat{\mathbf{q}}
     =
-    \left\{
-        \mathbf{s}
-        \mapsto
-        \mathbf{A}\mathbf{s}+\mathbf{b}
-        \;\middle|\;
-        \mathbf{A}\in\mathbb{R}^{3\times3},
-        \;
-        \mathbf{b}\in\mathbb{R}^{3}
-    \right\}.
+    \mathbf{A}\mathbf{s}+\mathbf{b},
 \end{equation}
+where $\mathbf{A}\in\mathbb{R}^{3\times3}$ represents the sensor sensitivities
+and cross-axis relationships, and $\mathbf{b}\in\mathbb{R}^{3}$ represents the
+zero-force offsets.
 
-A full quadratic model can be defined using
-\begin{equation}
-    \boldsymbol{\phi}_2(\mathbf{s})
-    =
-    \begin{bmatrix}
-        1 &
-        c_1 & c_2 & c_3 &
-        c_1^2 & c_2^2 & c_3^2 &
-        c_1c_2 & c_1c_3 & c_2c_3
-    \end{bmatrix}^{\mathsf{T}},
-\end{equation}
-giving
-\begin{equation}
-    \mathcal{M}_{\mathrm{quadratic}}
-    =
-    \left\{
-        \mathbf{s}
-        \mapsto
-        \mathbf{B}\boldsymbol{\phi}_2(\mathbf{s})
-        \;\middle|\;
-        \mathbf{B}\in\mathbb{R}^{3\times10}
-    \right\}.
-\end{equation}
+More complex model families will be considered only if the simpler models are
+shown to be inadequate.
 
-More complex nonlinear or machine-learning model classes may be introduced
-later only when simpler model classes are shown to be inadequate.
-
-\subsubsection{Required Performance and Uncertainty}
-
-For validation sample $i$, define the force-estimation error as
+\item $\mathcal{P}$ is the set of required calibration-performance and
+uncertainty limits. For validation sample $i$, the force-estimation error is
 \begin{equation}
     \mathbf{e}_i
     =
-    \widehat{\mathbf{F}}_i
-    -
-    \mathbf{F}^{\mathrm{ref}}_i.
+    \widehat{\mathbf{q}}_i-\mathbf{q}_i.
 \end{equation}
 
 For axis $j\in\{x,y,z\}$, the root-mean-square error is
@@ -271,45 +172,30 @@ For axis $j\in\{x,y,z\}$, the root-mean-square error is
         \frac{1}{N_{\mathrm{val}}}
         \sum_{i=1}^{N_{\mathrm{val}}}
         e_{i,j}^{2}
-    }.
+    },
 \end{equation}
+where $N_{\mathrm{val}}$ is the number of independent validation samples.
 
-The performance requirements are represented by a set of metric--threshold
-pairs:
+An initial definition of the performance requirements is
 \begin{equation}
     \mathcal{P}
     =
     \left\{
-        m_{\ell}
-        \leq
-        \tau_{\ell}
+        \operatorname{RMSE}_j \leq \varepsilon_j,
+        \quad
+        U_j \leq U_j^{\max}
         \;:\;
-        \ell=1,\ldots,L
+        j\in\{x,y,z\}
     \right\},
 \end{equation}
-where $m_{\ell}$ is a declared validation metric and $\tau_{\ell}$ is its
-acceptance threshold.
+where $\varepsilon_j$ is the maximum acceptable error and $U_j^{\max}$ is the
+maximum acceptable uncertainty for force axis $j$.
 
-For example, axis-specific requirements may include
-\begin{equation}
-    \operatorname{RMSE}_j \leq \varepsilon^{\mathrm{RMSE}}_j,
-    \qquad
-    Q_{1-\alpha}\!\left(\lvert e_j\rvert\right)
-    \leq
-    \varepsilon^{\mathrm{quantile}}_j,
-    \qquad
-    U_j \leq U_j^{\max},
-\end{equation}
-where $Q_{1-\alpha}$ is the $(1-\alpha)$ error quantile and $U_j$ is the
-declared calibration or prediction uncertainty for axis $j$. The metrics,
-thresholds, and confidence level must be selected from the application
-requirements rather than from the observed calibration results.
+The numerical limits remain to be defined from the application requirements.
 
-\subsubsection{Generalization Claim}
-
-Let $\mathcal{R}$ denote the set of experimental runs, $\mathcal{C}$ the set of
-operating conditions, and $\mathcal{U}$ the set of physical sensor units. The
-generalization target is defined as
+\item $\mathcal{G}$ is the intended generalization claim. It defines the unseen
+runs, operating conditions, or physical sensor units for which the calibration
+is expected to remain valid:
 \begin{equation}
     \mathcal{G}
     \subseteq
@@ -317,11 +203,13 @@ generalization target is defined as
     \times
     \mathcal{C}
     \times
-    \mathcal{U}.
+    \mathcal{U},
 \end{equation}
+where $\mathcal{R}$ is the set of experimental runs, $\mathcal{C}$ is the set
+of operating conditions, and $\mathcal{U}$ is the set of physical sensor units.
 
-For a calibration intended to generalize to new runs of the same individual
-sensor under the declared conditions,
+For the first calibration stage, the intended claim is generalization to new
+runs of the same individual sensor under the declared operating conditions:
 \begin{equation}
     \mathcal{G}_{\mathrm{stage\,1}}
     =
@@ -331,24 +219,13 @@ sensor under the declared conditions,
     \times
     \left\{u_0\right\},
 \end{equation}
-where $u_0$ is the calibrated sensor unit.
+where $u_0$ is the individual sensor being calibrated.
 
-If the calibration is later required to generalize to previously unseen sensor
-units, the claim becomes
-\begin{equation}
-    \mathcal{G}_{\mathrm{multi\text{-}unit}}
-    =
-    \mathcal{R}_{\mathrm{new}}
-    \times
-    \mathcal{C}
-    \times
-    \mathcal{U}_{\mathrm{new}}.
-\end{equation}
 
-The validation partition must match the generalization claim. For example,
-generalization to new runs requires holding out complete runs, while
-generalization to new sensor units requires holding out complete sensor units.
 
+
+
+\end{itemize}
 
 \end{document}
 
