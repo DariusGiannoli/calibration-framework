@@ -786,15 +786,49 @@ mounting, using only its three sensing coils. The calibration task is
 
 The first task currently defines the three coil inputs, three reference-force
 outputs, affine model family, rigid mounting condition, and generalization to
-new runs of the same sensor. Its remaining declarations are:
-\begin{itemize}
-    \item the numerical limits of $\Omega_1$;
-    \item the temperature and loading-rate ranges; and
-    \item the performance and uncertainty thresholds.
-\end{itemize}
-Until these values and their sources are declared, D0 and the affected D2,
-D4, and D6 assessments remain \textsc{Indeterminate}. The missing values must
-not be inferred from the dataset being assessed.
+new runs of the same sensor. The executable T1 template currently produces 37
+missing D0 declarations: 17 associated with D2, two with D3, and 18 with D6.
+Each has been assigned one primary source class:
+\begin{center}
+\begin{tabular}{p{0.78\linewidth}r}
+\hline
+Source class & Count \\
+\hline
+Physical or application requirement & 18 \\
+Hardware or reference specification & 0 \\
+Experimental-design choice & 9 \\
+Statistical threshold requiring simulation or pilot justification & 7 \\
+Value evaluated only after acquisition & 3 \\
+\hline
+Total & 37 \\
+\hline
+\end{tabular}
+\end{center}
+
+The absence of hardware specifications from this count is deliberate: sensor
+and reference ranges, reference uncertainty, bandwidth, synchronization, and
+frame-transformation evidence are evaluated by D1 from the instrument and
+setup profiles. They remain high-priority declarations even though they are
+not members of the 37-item D0 list.
+
+The 19 D2 and D3 declarations must be resolved before prospective trajectory
+comparison. They comprise the numerical limits of $\Omega_1$, the temperature
+and loading-rate ranges, joint-domain exclusions, evaluation-grid resolutions,
+the maximum fill distance, the handling of operating conditions, and a
+versioned confounding review. The D6 acceptance thresholds and analysis choices
+must be fixed before final acquisition and test evaluation. The three
+per-axis calibrated-force uncertainty estimates are populated only after the
+locked uncertainty method is applied to acquired evidence.
+
+The machine-readable classification is maintained in
+\texttt{triaxial\_t1\_declarations.yaml}, with the supervisor decision sequence
+and permitted evidence sources in
+\texttt{triaxial\_t1\_supervisor\_worksheet.md}. A software audit checks that
+the register exactly covers the live D0 missing-evidence paths. This alignment
+does not make D0 pass; until the supported values are entered in their owning
+profiles, D0 and the affected D2, D3, and D6 assessments remain
+\textsc{Indeterminate}. The missing values must not be inferred from the
+dataset being assessed.
 
 \subsubsection{Application of D1}
 
@@ -862,8 +896,10 @@ performance requirements $\mathcal{P}_1$.
 Samples containing missing values, corrupted packets, clipping, or saturation
 must be identified and excluded using a documented rule. The synchronization
 tolerance, valid measurement ranges, coordinate transformation, and reference
-uncertainty limits remain to be defined from the acquisition-system
-specifications.
+uncertainty evidence remain to be defined from the acquisition-system and
+reference specifications. The maximum acceptable reference uncertainty is a
+separate application requirement derived from the calibration uncertainty
+budget.
 \subsubsection{Application of D2}
 
 For the first application, the intended three-dimensional force domain is

@@ -7,6 +7,7 @@ import yaml
 from pydantic import BaseModel
 
 from .models import (
+    DeclarationRegister,
     EvidenceManifest,
     InstrumentProfile,
     SetupProfile,
@@ -68,3 +69,12 @@ def load_task_bundle(task_path: Union[str, Path]) -> TaskBundle:
 
 def load_evidence_manifest(path: Union[str, Path]) -> EvidenceManifest:
     return _load_yaml_model(Path(path).expanduser().resolve(), EvidenceManifest)
+
+
+def load_declaration_register(
+    path: Union[str, Path],
+) -> DeclarationRegister:
+    return _load_yaml_model(
+        Path(path).expanduser().resolve(),
+        DeclarationRegister,
+    )

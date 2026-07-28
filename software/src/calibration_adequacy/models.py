@@ -47,6 +47,71 @@ class OverallAssessmentResult(StrictModel):
     missing_evidence: List[str] = Field(default_factory=list)
 
 
+class DeclarationClassification(str, Enum):
+    PHYSICAL_OR_APPLICATION_REQUIREMENT = (
+        "1_physical_or_application_requirement"
+    )
+    HARDWARE_OR_REFERENCE_SPECIFICATION = (
+        "2_hardware_or_reference_specification"
+    )
+    EXPERIMENTAL_DESIGN_CHOICE = "3_experimental_design_choice"
+    STATISTICAL_JUSTIFICATION = (
+        "4_statistical_threshold_requiring_simulation_or_pilot_justification"
+    )
+    POST_ACQUISITION_VALUE = "5_value_evaluated_after_acquisition"
+
+
+class DeclarationResolutionStage(str, Enum):
+    BEFORE_TRAJECTORY_SIMULATION = "before_trajectory_simulation"
+    BEFORE_FINAL_ACQUISITION = "before_final_acquisition"
+    AFTER_ACQUISITION = "after_acquisition"
+
+
+class DeclarationRegisterEntry(StrictModel):
+    path: str = Field(min_length=1)
+    criterion: Literal["D2", "D3", "D6"]
+    classification: DeclarationClassification
+    resolution_stage: DeclarationResolutionStage
+    decision_question: str = Field(min_length=1)
+    legitimate_source: str = Field(min_length=1)
+
+
+class DeclarationRegister(StrictModel):
+    schema_version: str = "0.1"
+    register_id: str = Field(min_length=1)
+    task_id: str = Field(min_length=1)
+    task_config: str = Field(min_length=1)
+    expected_d0_status: CriterionStatus
+    expected_missing_count: int = Field(ge=1)
+    scope_note: str = Field(min_length=1)
+    entries: List[DeclarationRegisterEntry] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_unique_paths(self) -> "DeclarationRegister":
+        paths = [entry.path for entry in self.entries]
+        if len(paths) != len(set(paths)):
+            raise ValueError("declaration register paths must be unique")
+        return self
+
+
+class DeclarationRegisterAudit(StrictModel):
+    aligned: bool
+    register_id: str
+    task_id: str
+    task_id_matches: bool
+    task_config_matches: bool
+    d0_status: CriterionStatus
+    expected_d0_status: CriterionStatus
+    expected_missing_count: int
+    actual_missing_count: int
+    registered_count: int
+    order_matches: bool
+    missing_from_register: List[str] = Field(default_factory=list)
+    no_longer_missing: List[str] = Field(default_factory=list)
+    classification_counts: Dict[str, int] = Field(default_factory=dict)
+    resolution_stage_counts: Dict[str, int] = Field(default_factory=dict)
+
+
 class ChannelProfile(StrictModel):
     unit: Optional[str] = Field(
         default=None,

@@ -1,0 +1,235 @@
+schema_version: "0.1"
+register_id: triaxial_t1_d0_missing_declarations_2026-07-28
+task_id: triaxial_t1
+task_config: triaxial_t1.yaml
+expected_d0_status: INDETERMINATE
+expected_missing_count: 37
+scope_note: >-
+  This register classifies the live D0 missing-evidence snapshot. It does not
+  supply scientific values and must not be used to infer limits from an
+  evaluated dataset. D1 hardware and measurement declarations are tracked in
+  the accompanying supervisor worksheet because they are not part of this
+  37-item D0 snapshot.
+entries:
+  - path: task.d2.domain.Fx.minimum
+    criterion: D2
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_trajectory_simulation
+    decision_question: What is the lowest Fx included in the intended force domain?
+    legitimate_source: Application load cases, safety envelope, and sensor use requirements.
+  - path: task.d2.domain.Fx.maximum
+    criterion: D2
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_trajectory_simulation
+    decision_question: What is the highest Fx included in the intended force domain?
+    legitimate_source: Application load cases, safety envelope, and sensor use requirements.
+  - path: task.d2.domain.Fx.grid_points
+    criterion: D2
+    classification: 3_experimental_design_choice
+    resolution_stage: before_trajectory_simulation
+    decision_question: How many evaluation-grid points should represent Fx, including both boundaries?
+    legitimate_source: Prospective grid-convergence study within the declared computational budget.
+  - path: task.d2.domain.Fy.minimum
+    criterion: D2
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_trajectory_simulation
+    decision_question: What is the lowest Fy included in the intended force domain?
+    legitimate_source: Application load cases, safety envelope, and sensor use requirements.
+  - path: task.d2.domain.Fy.maximum
+    criterion: D2
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_trajectory_simulation
+    decision_question: What is the highest Fy included in the intended force domain?
+    legitimate_source: Application load cases, safety envelope, and sensor use requirements.
+  - path: task.d2.domain.Fy.grid_points
+    criterion: D2
+    classification: 3_experimental_design_choice
+    resolution_stage: before_trajectory_simulation
+    decision_question: How many evaluation-grid points should represent Fy, including both boundaries?
+    legitimate_source: Prospective grid-convergence study within the declared computational budget.
+  - path: task.d2.domain.Fz.minimum
+    criterion: D2
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_trajectory_simulation
+    decision_question: What is the lowest Fz included in the intended force domain?
+    legitimate_source: Application load cases, safety envelope, and sensor use requirements.
+  - path: task.d2.domain.Fz.maximum
+    criterion: D2
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_trajectory_simulation
+    decision_question: What is the highest Fz included in the intended force domain?
+    legitimate_source: Application load cases, safety envelope, and sensor use requirements.
+  - path: task.d2.domain.Fz.grid_points
+    criterion: D2
+    classification: 3_experimental_design_choice
+    resolution_stage: before_trajectory_simulation
+    decision_question: How many evaluation-grid points should represent Fz, including both boundaries?
+    legitimate_source: Prospective grid-convergence study within the declared computational budget.
+  - path: task.d2.maximum_fill_distance
+    criterion: D2
+    classification: 4_statistical_threshold_requiring_simulation_or_pilot_justification
+    resolution_stage: before_trajectory_simulation
+    decision_question: What normalized joint-domain fill distance is small enough for the calibration claim?
+    legitimate_source: Prospective trajectory simulation and pilot sensitivity analysis linked to acceptable interpolation risk.
+  - path: task.d2.conditions.temperature.minimum
+    criterion: D2
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_trajectory_simulation
+    decision_question: What is the lowest temperature included in the calibration claim?
+    legitimate_source: Intended deployment environment and application operating specification.
+  - path: task.d2.conditions.temperature.maximum
+    criterion: D2
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_trajectory_simulation
+    decision_question: What is the highest temperature included in the calibration claim?
+    legitimate_source: Intended deployment environment and application operating specification.
+  - path: task.d2.conditions.temperature.grid_points
+    criterion: D2
+    classification: 3_experimental_design_choice
+    resolution_stage: before_trajectory_simulation
+    decision_question: How many evaluation-grid points should represent the claimed temperature range?
+    legitimate_source: Prospective grid-convergence study and feasible environmental test design.
+  - path: task.d2.conditions.loading_rate.minimum
+    criterion: D2
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_trajectory_simulation
+    decision_question: What is the lowest loading rate included in the calibration claim?
+    legitimate_source: Intended deployment motions and application operating specification.
+  - path: task.d2.conditions.loading_rate.maximum
+    criterion: D2
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_trajectory_simulation
+    decision_question: What is the highest loading rate included in the calibration claim?
+    legitimate_source: Intended deployment motions and application operating specification.
+  - path: task.d2.conditions.loading_rate.grid_points
+    criterion: D2
+    classification: 3_experimental_design_choice
+    resolution_stage: before_trajectory_simulation
+    decision_question: How many evaluation-grid points should represent the claimed loading-rate range?
+    legitimate_source: Prospective grid-convergence study and feasible loading-system design.
+  - path: task.d2.excluded_regions
+    criterion: D2
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_trajectory_simulation
+    decision_question: Which joint force-condition regions are outside the claim, and why?
+    legitimate_source: Application impossibility, safety constraints, or explicitly limited scientific scope; use an empty list if none.
+  - path: task.d3.confounding_review_id
+    criterion: D3
+    classification: 3_experimental_design_choice
+    resolution_stage: before_trajectory_simulation
+    decision_question: Which versioned review will show that coil effects and relevant conditions are distinguishable?
+    legitimate_source: Prospective design review covering trajectory, run order, conditions, drift, and nuisance variables.
+  - path: task.d3.condition_handling
+    criterion: D3
+    classification: 3_experimental_design_choice
+    resolution_stage: before_trajectory_simulation
+    decision_question: Will temperature and loading rate be held fixed, included in the model, or shown invariant?
+    legitimate_source: Stage-1 model scope and prospective experimental design; invariance requires later empirical evidence.
+  - path: task.d6.confidence_level
+    criterion: D6
+    classification: 4_statistical_threshold_requiring_simulation_or_pilot_justification
+    resolution_stage: before_final_acquisition
+    decision_question: What confidence level is required for held-out performance intervals?
+    legitimate_source: Consequence of calibration error, reporting convention, and prospective coverage analysis.
+  - path: task.d6.bootstrap_repetitions
+    criterion: D6
+    classification: 4_statistical_threshold_requiring_simulation_or_pilot_justification
+    resolution_stage: before_final_acquisition
+    decision_question: How many run-bootstrap repetitions make reported interval endpoints numerically stable?
+    legitimate_source: Prospective Monte Carlo convergence study at the selected confidence level.
+  - path: task.d6.bootstrap_random_seed
+    criterion: D6
+    classification: 3_experimental_design_choice
+    resolution_stage: before_final_acquisition
+    decision_question: Which fixed seed will make the final run-bootstrap evidence reproducible?
+    legitimate_source: Pre-registered analysis plan; any recorded seed is valid before test evaluation.
+  - path: task.d6.minimum_bootstrap_units
+    criterion: D6
+    classification: 4_statistical_threshold_requiring_simulation_or_pilot_justification
+    resolution_stage: before_final_acquisition
+    decision_question: How many independent held-out runs are required for credible run-level resampling?
+    legitimate_source: Prospective power and interval-precision simulation using plausible run-to-run variation.
+  - path: task.d6.uncertainty_method_id
+    criterion: D6
+    classification: 3_experimental_design_choice
+    resolution_stage: before_final_acquisition
+    decision_question: Which versioned method will estimate per-force calibrated uncertainty?
+    legitimate_source: Measurement-uncertainty model selected before final test evaluation.
+  - path: task.d6.regions
+    criterion: D6
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_final_acquisition
+    decision_question: Which force-condition regions need separate performance guarantees?
+    legitimate_source: Safety-critical, boundary, magnitude, direction, and operating-condition use cases; define before test evaluation.
+  - path: task.d6.axes.Fx.maximum_interval_half_width
+    criterion: D6
+    classification: 4_statistical_threshold_requiring_simulation_or_pilot_justification
+    resolution_stage: before_final_acquisition
+    decision_question: How precise must the held-out Fx RMSE estimate be?
+    legitimate_source: Decision-relevant precision linked to the Fx acceptance margin and justified by run-level simulation.
+  - path: task.d6.axes.Fx.maximum_rmse
+    criterion: D6
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_final_acquisition
+    decision_question: What is the largest acceptable held-out Fx RMSE?
+    legitimate_source: Downstream application error budget and safety or control requirements.
+  - path: task.d6.axes.Fx.calibrated_force_uncertainty
+    criterion: D6
+    classification: 5_value_evaluated_after_acquisition
+    resolution_stage: after_acquisition
+    decision_question: What calibrated Fx uncertainty does the locked uncertainty method estimate?
+    legitimate_source: Final acquired evidence processed by the predeclared uncertainty method; never a guessed planning value.
+  - path: task.d6.axes.Fx.maximum_calibrated_force_uncertainty
+    criterion: D6
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_final_acquisition
+    decision_question: What is the largest acceptable calibrated Fx uncertainty?
+    legitimate_source: Downstream application uncertainty budget and reference-to-sensor traceability requirements.
+  - path: task.d6.axes.Fy.maximum_interval_half_width
+    criterion: D6
+    classification: 4_statistical_threshold_requiring_simulation_or_pilot_justification
+    resolution_stage: before_final_acquisition
+    decision_question: How precise must the held-out Fy RMSE estimate be?
+    legitimate_source: Decision-relevant precision linked to the Fy acceptance margin and justified by run-level simulation.
+  - path: task.d6.axes.Fy.maximum_rmse
+    criterion: D6
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_final_acquisition
+    decision_question: What is the largest acceptable held-out Fy RMSE?
+    legitimate_source: Downstream application error budget and safety or control requirements.
+  - path: task.d6.axes.Fy.calibrated_force_uncertainty
+    criterion: D6
+    classification: 5_value_evaluated_after_acquisition
+    resolution_stage: after_acquisition
+    decision_question: What calibrated Fy uncertainty does the locked uncertainty method estimate?
+    legitimate_source: Final acquired evidence processed by the predeclared uncertainty method; never a guessed planning value.
+  - path: task.d6.axes.Fy.maximum_calibrated_force_uncertainty
+    criterion: D6
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_final_acquisition
+    decision_question: What is the largest acceptable calibrated Fy uncertainty?
+    legitimate_source: Downstream application uncertainty budget and reference-to-sensor traceability requirements.
+  - path: task.d6.axes.Fz.maximum_interval_half_width
+    criterion: D6
+    classification: 4_statistical_threshold_requiring_simulation_or_pilot_justification
+    resolution_stage: before_final_acquisition
+    decision_question: How precise must the held-out Fz RMSE estimate be?
+    legitimate_source: Decision-relevant precision linked to the Fz acceptance margin and justified by run-level simulation.
+  - path: task.d6.axes.Fz.maximum_rmse
+    criterion: D6
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_final_acquisition
+    decision_question: What is the largest acceptable held-out Fz RMSE?
+    legitimate_source: Downstream application error budget and safety or control requirements.
+  - path: task.d6.axes.Fz.calibrated_force_uncertainty
+    criterion: D6
+    classification: 5_value_evaluated_after_acquisition
+    resolution_stage: after_acquisition
+    decision_question: What calibrated Fz uncertainty does the locked uncertainty method estimate?
+    legitimate_source: Final acquired evidence processed by the predeclared uncertainty method; never a guessed planning value.
+  - path: task.d6.axes.Fz.maximum_calibrated_force_uncertainty
+    criterion: D6
+    classification: 1_physical_or_application_requirement
+    resolution_stage: before_final_acquisition
+    decision_question: What is the largest acceptable calibrated Fz uncertainty?
+    legitimate_source: Downstream application uncertainty budget and reference-to-sensor traceability requirements.

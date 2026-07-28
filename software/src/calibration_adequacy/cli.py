@@ -8,7 +8,11 @@ from typing import Dict, Type
 
 from pydantic import BaseModel
 
-from .config import ConfigurationError, load_task_bundle
+from .config import (
+    ConfigurationError,
+    load_declaration_register,
+    load_task_bundle,
+)
 from .criteria import (
     evaluate_all,
     evaluate_d0,
@@ -20,8 +24,11 @@ from .criteria import (
     evaluate_d6,
     evaluate_d7,
 )
+from .declaration_register import audit_declaration_register
 from .models import (
     CriterionStatus,
+    DeclarationRegister,
+    DeclarationRegisterAudit,
     EvidenceManifest,
     InstrumentProfile,
     OverallAssessmentResult,
@@ -34,6 +41,8 @@ def _write_schemas(output_directory: Path) -> int:
     output_directory.mkdir(parents=True, exist_ok=True)
     models: Dict[str, Type[BaseModel]] = {
         "evidence-manifest.schema.json": EvidenceManifest,
+        "declaration-register.schema.json": DeclarationRegister,
+        "declaration-register-audit.schema.json": DeclarationRegisterAudit,
         "instrument-profile.schema.json": InstrumentProfile,
         "overall-assessment.schema.json": OverallAssessmentResult,
         "setup-profile.schema.json": SetupProfile,
@@ -53,6 +62,21 @@ def _evaluate_d0(arguments: argparse.Namespace) -> int:
     bundle = load_task_bundle(arguments.task)
     result = evaluate_d0(bundle)
     return _render_result(result, arguments.output, "D0")
+
+
+def _audit_declarations(arguments: argparse.Namespace) -> int:
+    bundle = load_task_bundle(arguments.task)
+    register = load_declaration_register(arguments.register)
+    result = audit_declaration_register(bundle, register)
+    rendered = json.dumps(result.model_dump(mode="json"), indent=2) + "\n"
+    if arguments.output:
+        output_path = Path(arguments.output).expanduser().resolve()
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(rendered, encoding="utf-8")
+        print(f"declaration-register audit: {output_path}")
+    else:
+        print(rendered, end="")
+    return 0 if result.aligned else 1
 
 
 def _evaluate_d1(arguments: argparse.Namespace) -> int:
@@ -231,6 +255,26 @@ def build_parser() -> argparse.ArgumentParser:
     d0_parser.add_argument("--task", required=True, help="Path to task YAML.")
     d0_parser.add_argument("--output", help="Optional JSON evidence-report path.")
     d0_parser.set_defaults(handler=_evaluate_d0)
+
+    declarations_parser = subparsers.add_parser(
+        "audit-declarations",
+        help="Check a classified declaration register against live D0 output.",
+    )
+    declarations_parser.add_argument(
+        "--task",
+        required=True,
+        help="Path to task YAML.",
+    )
+    declarations_parser.add_argument(
+        "--register",
+        required=True,
+        help="Path to declaration-register YAML.",
+    )
+    declarations_parser.add_argument(
+        "--output",
+        help="Optional JSON audit-report path.",
+    )
+    declarations_parser.set_defaults(handler=_audit_declarations)
 
     d1_parser = subparsers.add_parser(
         "evaluate-d1",

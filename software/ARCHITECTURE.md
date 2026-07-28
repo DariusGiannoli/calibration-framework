@@ -35,6 +35,7 @@ second copy of the criterion logic.
 | Reference profile | valid ranges, actual uncertainty, certificate evidence | application acceptance limits |
 | Setup profile | synchronization tolerance and frame transformation | dataset observations |
 | Task profile | calibration claim, applicability, column mappings, and criterion-specific requirements | inferred hardware specifications or observed dataset extrema |
+| Declaration register | classification, resolution timing, decision question, and legitimate source for each unresolved D0 path | guessed scientific values or a second copy of resolved task values |
 | Evidence manifest | file roles, SHA-256 records, versions, seeds, and recorded results | undocumented files or mutable identifiers |
 
 Unknown scientific values are represented explicitly as `null`. Missing values
@@ -59,6 +60,19 @@ family, performance requirements, and generalization unit. It cross-checks the
 claim against D2, D3, D4, D5, and D6 rather than accepting free-text
 declarations. Missing claim elements produce `INDETERMINATE`; contradictory
 declarations produce `FAIL`.
+
+For the real triaxial T1 template, a typed declaration register classifies each
+live D0 missing-evidence path. `audit-declarations` compares the register with
+the evaluator output and reports paths that are unclassified or no longer
+missing. The register intentionally stores resolution metadata rather than
+scientific values: once supported, values belong in the task, instrument, or
+setup profile that owns them.
+
+The current 37-item snapshot contains D2, D3, and D6 paths. Direct hardware and
+reference specifications are absent from that count because D1 evaluates them
+from instrument and setup profiles. Per-axis calibrated-force uncertainty
+estimates remain classified as post-acquisition results, so an aligned register
+does not imply a complete claim or a D0 `PASS`.
 
 ## D1 implementation
 

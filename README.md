@@ -30,6 +30,27 @@ calibration-adequacy evaluate-d0 \
   --task software/configs/tasks/triaxial_t1.yaml
 ```
 
+The real T1 template deliberately remains indeterminate. Its 37 live D0
+missing declarations are classified, without guessed values, in
+`software/configs/tasks/triaxial_t1_declarations.yaml`. The associated
+`triaxial_t1_supervisor_worksheet.md` separates immediate application
+decisions, hardware/reference facts, prospective design choices, statistically
+justified thresholds, and post-acquisition results.
+
+Check that the classification register still matches the evaluator:
+
+```bash
+calibration-adequacy audit-declarations \
+  --task software/configs/tasks/triaxial_t1.yaml \
+  --register software/configs/tasks/triaxial_t1_declarations.yaml
+```
+
+The audit succeeds only when the task identifier, expected D0 status, expected
+count, and registered paths match the live D0 result. It also reports category
+and resolution-stage counts. This check verifies classification coverage; it
+does not resolve any scientific declaration or change D0 from
+`INDETERMINATE`.
+
 ## Evaluate the synthetic D1 example
 
 ```bash

@@ -1,3 +1,6 @@
+# Unresolved D0 fields are classified in triaxial_t1_declarations.yaml.
+# Use triaxial_t1_supervisor_worksheet.md to resolve them without inferring
+# scientific limits from evaluated data.
 schema_version: "0.1"
 task_id: triaxial_t1
 profiles:
