@@ -8,7 +8,7 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{amsmath,amssymb}
 
-\title{Calibration Dataset Adequacy Framework\\Working Research Plan}
+\title{Calibration Protocol and Dataset Adequacy Framework\\Working Research Plan}
 \author{}
 \date{\today}
 
@@ -30,8 +30,9 @@ evaluate a viable sensor calibration?
 
 \section{Definition of Adequacy}
 
-A dataset cannot be considered adequate in isolation. Its adequacy must be
-assessed relative to a declared calibration task:
+Neither an experimental protocol nor an acquired dataset can be considered
+adequate in isolation. Adequacy must be assessed relative to a declared
+calibration task:
 \begin{equation}
     \mathcal{T}
     =
@@ -58,21 +59,64 @@ where:
     \item $\mathcal{G}$ is the intended generalization claim.
 \end{itemize}
 
-For an acquired dataset $D$, adequacy is therefore conditional:
+For an acquired dataset $D$, achieved-dataset adequacy is therefore
+conditional:
 \begin{equation}
-    \operatorname{Adequacy}\left(D \mid \mathcal{T}\right).
+    \operatorname{Adequacy}_{\mathrm{ach}}
+    \left(D \mid \mathcal{T}\right).
 \end{equation}
 
+A calibration protocol is represented by
+\begin{equation}
+    \Pi_{\boldsymbol{\lambda}}
+    =
+    \left\{
+        \mathbf{u}_{r}(t;\boldsymbol{\lambda}_{r}),
+        \mathbf{z}_{r}(t;\boldsymbol{\lambda}_{r})
+        :
+        r\in\mathcal{R}_{\Pi}
+    \right\},
+\end{equation}
+where $\mathbf{u}_{r}$ is the rig command for run $r$,
+$\mathbf{z}_{r}$ is its planned operating-condition schedule,
+$\boldsymbol{\lambda}_{r}$ contains the trajectory parameters, and
+$\mathcal{R}_{\Pi}$ is the planned set of experimental runs. The symbol
+$\boldsymbol{\lambda}$ is reserved for protocol parameters and is distinct
+from the calibration-model parameters.
+
+Prospective protocol adequacy is also conditional:
+\begin{equation}
+    \operatorname{Adequacy}_{\mathrm{plan}}
+    \left(
+        \Pi_{\boldsymbol{\lambda}}
+        \mid
+        \mathcal{T},
+        \mathcal{H}
+    \right),
+\end{equation}
+where $\mathcal{H}$ contains the declared rig model, sensor-response prior,
+physical constraints, and uncertainty assumptions used to predict what the
+protocol will achieve. Consequently, a prospective conclusion is a
+model-conditional design statement. It is not evidence that the final
+acquisition or calibration has already succeeded.
 
 
 %==================================================================%
 \section{Universal Criteria}
+
+The criteria below define universal scientific obligations. Their primary
+formulation states what must be established using achieved evidence. The
+section on prospective protocol adequacy defines how the same obligations are
+used before acquisition without confusing commanded or model-predicted
+evidence with achieved measurements.
+
 \subsection{Criterion D0: Calibration Claim Completeness}
 
-D0 is a precondition for dataset assessment. Each component of
-$\mathcal{T}$ must be specified with enough detail to evaluate the applicable
-criteria. In particular, the claimed domains, model family, performance
-requirements, and generalization target cannot remain implicit.
+D0 is a precondition for both prospective protocol assessment and achieved
+dataset assessment. Each component of $\mathcal{T}$ must be specified with
+enough detail to evaluate the applicable criteria. In particular, the claimed
+domains, model family, performance requirements, and generalization target
+cannot remain implicit.
 
 Let $\operatorname{Specified}(x)$ indicate that $x$ is defined at the level
 required for assessment. D0 is satisfied when
@@ -91,9 +135,24 @@ required for assessment. D0 is satisfied when
     }
     \operatorname{Specified}(x)
 \end{equation}
-is true. If a required component is missing, the affected criteria and the
-overall assessment are \textsc{Indeterminate}, rather than being assigned
-assumed values.
+is true. For a prospective assessment, D0 additionally requires
+\begin{equation}
+    \bigwedge_{
+        x\in
+        \left\{
+            \mathcal{F},
+            \Lambda,
+            \mathcal{H}
+        \right\}
+    }
+    \operatorname{Specified}(x),
+\end{equation}
+where $\mathcal{F}$ is the declared set of candidate protocol families,
+$\Lambda$ is its parameter search space, and $\mathcal{H}$ is the planning
+description used to predict execution and sensor response. If a required
+component is missing, the affected criteria and the phase-qualified overall
+assessment are \textsc{Indeterminate}, rather than being assigned assumed
+values.
 
 \subsection{Criterion D1: Measurement and Reference Validity}
 
@@ -541,11 +600,11 @@ software state are sufficient to reproduce D0--D6. It is \textsc{Fail} when a
 known loss or undocumented transformation prevents reproduction, and
 \textsc{Indeterminate} when required provenance is unavailable.
 
-\subsection{Overall Decision Semantics}
+\subsection{Achieved-Dataset Decision Semantics}
 
 Each applicable dataset criterion returns one of
 \begin{equation}
-    A_k
+    A_k^{\mathrm{ach}}
     \in
     \left\{
         \textsc{Pass},
@@ -560,7 +619,12 @@ Each applicable dataset criterion returns one of
 If D0 is incomplete, the overall result is \textsc{Indeterminate}. Otherwise,
 for the required criteria, the overall dataset assessment is
 \begin{equation}
-    A(D\mid\mathcal{T})
+    A_{\mathrm{ach}}
+    \left(
+        D_{\mathrm{ach}}
+        \mid
+        \mathcal{T}
+    \right)
     =
     \begin{cases}
         \textsc{Fail},
@@ -578,6 +642,341 @@ $\mathcal{P}$ is reported separately from dataset adequacy. A criterion may be
 obligation irrelevant; it is then excluded from the overall aggregation.
 
 
+
+
+%==================================================================%
+\section{Prospective Protocol Adequacy and Design}
+
+\subsection{Evidence Levels}
+
+The framework distinguishes commanded, predicted, and achieved evidence. The
+commanded protocol produces
+\begin{equation}
+    D_{\mathrm{cmd}}
+    \left(
+        \boldsymbol{\lambda}
+    \right)
+    =
+    \left\{
+        t_i,
+        r_i,
+        \mathbf{u}_i
+        \left(
+            \boldsymbol{\lambda}
+        \right),
+        \mathbf{z}_i
+        \left(
+            \boldsymbol{\lambda}
+        \right)
+    \right\}_{i=1}^{N_{\mathrm{cmd}}}.
+\end{equation}
+Commanded evidence establishes what was requested from the rig. It does not,
+by itself, establish which reference forces or sensor signals will be
+achieved.
+
+Let the planning description be
+\begin{equation}
+    \mathcal{H}
+    =
+    \left(
+        g_{\boldsymbol{\eta}},
+        h_{\boldsymbol{\eta}},
+        \mathcal{K},
+        \Xi
+    \right),
+\end{equation}
+where:
+\begin{itemize}
+    \item $g_{\boldsymbol{\eta}}$ is a rig model that maps commands and
+        conditions to predicted reference measurands;
+    \item $h_{\boldsymbol{\eta}}$ is a sensor-response prior that maps
+        predicted measurands and conditions to predicted raw sensor signals;
+    \item $\mathcal{K}$ is the set of physical, safety, bandwidth, boundary,
+        and execution constraints; and
+    \item $\Xi$ is the declared set or distribution of plausible model,
+        tracking, noise, and nuisance-parameter scenarios
+        $\boldsymbol{\eta}$.
+\end{itemize}
+The models may depend on state or history when the declared task requires it.
+For scenario $\boldsymbol{\eta}\in\Xi$,
+\begin{align}
+    \mathbf{q}^{\mathrm{pred}}_i
+    &=
+    g_{\boldsymbol{\eta}}
+    \left(
+        \mathbf{u}_i,
+        \mathbf{z}_i,
+        \text{history}_i
+    \right),\\
+    \mathbf{s}^{\mathrm{pred}}_i
+    &=
+    h_{\boldsymbol{\eta}}
+    \left(
+        \mathbf{q}^{\mathrm{pred}}_i,
+        \mathbf{z}_i,
+        \text{history}_i
+    \right).
+\end{align}
+These quantities form the predicted dataset
+\begin{equation}
+    D_{\mathrm{pred}}
+    \left(
+        \boldsymbol{\lambda},
+        \boldsymbol{\eta}
+    \right)
+    =
+    \left\{
+        t_i,
+        r_i,
+        \mathbf{s}^{\mathrm{pred}}_i,
+        \mathbf{q}^{\mathrm{pred}}_i,
+        \mathbf{z}_i
+    \right\}_{i=1}^{N_{\mathrm{pred}}}.
+\end{equation}
+
+After execution, the achieved dataset is
+\begin{equation}
+    D_{\mathrm{ach}}
+    =
+    \left\{
+        t_i^s,
+        t_i^{\mathrm{ref}},
+        r_i,
+        \mathbf{s}_i,
+        \mathbf{q}^{\mathrm{ref}}_i,
+        \mathbf{z}_i
+    \right\}_{i=1}^{N_{\mathrm{ach}}}.
+\end{equation}
+The transition
+\begin{equation}
+    D_{\mathrm{cmd}}
+    \longrightarrow
+    D_{\mathrm{pred}}
+    \longrightarrow
+    D_{\mathrm{ach}}
+\end{equation}
+must remain visible in all reports. A commanded value must not be silently
+substituted for a predicted or achieved value.
+
+\subsection{Use of the Universal Criteria in Both Phases}
+
+The identifiers D0--D7 denote universal scientific obligations. Each
+obligation may have a prospective test, an achieved-data test, or both. The
+evidence phase and evidence source must accompany every criterion result.
+
+\begin{description}[style=nextline]
+    \item[D0---Claim completeness.]
+    Before acquisition, D0 checks that the calibration task, protocol-design
+    question, parameter search space, planning models, constraints, thresholds,
+    generalization claim, and uncertainty scenarios are sufficiently declared.
+    After acquisition, it checks the frozen calibration claim used for the
+    final assessment.
+
+    \item[D1---Measurement and execution validity.]
+    Prospectively, D1 contributes capability and executability constraints:
+    instrument ranges, reference capability, frame geometry, synchronization,
+    bandwidth, sampling, and rig limits must be compatible with the proposed
+    protocol. This is not proof that future observations will be valid.
+    Retrospective D1 evaluates the actual retained sensor--reference pairs.
+
+    \item[D2---Claimed-domain coverage.]
+    Prospectively, the coverage method is applied to
+    $\mathbf{q}^{\mathrm{pred}}$ and the planned conditions for every required
+    scenario. Commanded measurands may be used only when a declared rig
+    argument justifies their equivalence to achieved measurands.
+    Retrospectively, D2 is applied to achieved reference measurements and
+    recorded conditions.
+
+    \item[D3---Informativeness and identifiability.]
+    Prospectively, the model-specific information test is applied to predicted
+    sensor signals, a declared sensitivity model, or a justified structural
+    proxy. Retrospectively, the same obligation is tested using achieved sensor
+    inputs. The proxy, assumptions, and loss of information relative to the
+    achieved test must be reported.
+
+    \item[D4---Independent replication and dependence.]
+    Prospectively, D4 checks whether the protocol schedules the required
+    separate acquisitions, configurations, repetitions, initialization, and
+    zeroing operations. Dependence and effective sample size may be predicted
+    only under a declared stochastic or dynamic model. Retrospectively, they
+    are estimated from achieved runs.
+
+    \item[D5---Leakage-resistant validation.]
+    Prospectively, D5 checks that a complete run-level development/test
+    allocation is possible and can be frozen before final evaluation.
+    Retrospectively, it verifies the realized partition and its provenance.
+
+    \item[D6---Performance and uncertainty evidence.]
+    Prospectively, simulation or pilot-based uncertainty models may estimate
+    the number and allocation of independent test runs needed to achieve the
+    declared metric precision. Predicted calibration performance remains
+    conditional on the assumed rig, sensor, noise, and model descriptions.
+    Retrospectively, D6 evaluates held-out performance and uncertainty.
+
+    \item[D7---Reproducibility and provenance.]
+    Prospectively, D7 requires versioned task, protocol, model, constraint,
+    parameter-bound, optimizer, seed, and command-file records.
+    Retrospectively, it additionally requires immutable raw data and
+    reproduction of the achieved assessment.
+\end{description}
+
+\subsection{Universal and Specific Responsibilities}
+
+The framework is device-agnostic because the universal layer specifies
+obligations and interfaces rather than a particular trajectory, sensor, or
+rig. Its responsibilities are:
+\begin{itemize}
+    \item define the task, evidence levels, criterion semantics, and required
+        provenance;
+    \item calculate joint-domain coverage from supplied points and a declared
+        domain;
+    \item request a model-specific information measure and compare it with
+        declared requirements;
+    \item enforce replication, validation, and uncertainty obligations;
+    \item aggregate criterion results without hiding missing evidence; and
+    \item formulate protocol selection as a constrained, auditable search.
+\end{itemize}
+
+Application-specific components satisfy the following interfaces:
+\begin{description}[style=nextline]
+    \item[Protocol-family interface.]
+    Defines
+    $\mathbf{u}(t;\boldsymbol{\lambda})$, its parameter bounds, derivatives,
+    duration, boundary conditions, and discrete run choices. Lissajous,
+    spiral, waypoint, random, factorial, and optimized designs are alternative
+    implementations of this interface.
+
+    \item[Rig interface.]
+    Provides $g_{\boldsymbol{\eta}}$, rig states, feasible commands, tracking
+    behavior, and physical constraints. The universal layer does not assume
+    that a force command is achieved exactly.
+
+    \item[Sensor interface.]
+    Provides $h_{\boldsymbol{\eta}}$, valid ranges, saturation behavior, noise,
+    nuisance effects, and uncertainty scenarios. A planning prior is not
+    treated as final calibration evidence.
+
+    \item[Calibration-model interface.]
+    Constructs the feature matrix, sensitivity matrix, Jacobian, Fisher
+    information, or other model-appropriate informativeness object. For an
+    affine model this may be a normalized design matrix; for nonlinear or
+    dynamic models the method is different.
+
+    \item[Optimizer interface.]
+    Searches the declared protocol parameter space and returns feasible
+    candidates, objective values, constraint margins, convergence information,
+    and any valid infeasibility bound.
+\end{description}
+
+\subsection{Robust Feasibility and Parameter Selection}
+
+Let $\Lambda_{\mathrm{safe}}(\mathcal{F},\mathcal{H})$ be the allowed parameter
+space for a declared set of trajectory families $\mathcal{F}$ after applying
+the deterministic constraints in $\mathcal{K}$. Let
+$h_{\mathrm{plan}}(\boldsymbol{\lambda},\boldsymbol{\eta})$ be the D2 coverage
+measure calculated from $D_{\mathrm{pred}}$, and let
+$I_{\mathcal{M}}(\boldsymbol{\lambda},\boldsymbol{\eta})$ be the
+model-specific D3 information result.
+
+A robustly feasible protocol parameter vector satisfies
+\begin{equation}
+    \boldsymbol{\lambda}
+    \in
+    \Lambda_{\mathrm{safe}}
+    \quad\text{and}\quad
+    \bigwedge_{\boldsymbol{\eta}\in\Xi}
+    \left[
+        h_{\mathrm{plan}}
+        \left(
+            \boldsymbol{\lambda},
+            \boldsymbol{\eta}
+        \right)
+        \leq h_{\max}
+        \;\land\;
+        I_{\mathcal{M}}
+        \left(
+            \boldsymbol{\lambda},
+            \boldsymbol{\eta}
+        \right)
+        \in
+        \mathcal{I}_{\mathrm{acceptable}}
+    \right],
+\end{equation}
+with the required D0, D1, D4, D5, D6, and D7 planning obligations also
+satisfied. A probabilistic robustness requirement may replace the conjunction
+over $\Xi$, but its probability level and distribution must be declared.
+
+Parameter selection may minimize total duration,
+\begin{equation}
+    \min_{\boldsymbol{\lambda}}
+    T_{\mathrm{total}}
+    \left(
+        \boldsymbol{\lambda}
+    \right),
+\end{equation}
+subject to adequacy and execution constraints. Alternatively, it may report a
+Pareto set for coverage, informativeness, robustness, duration, and actuation
+cost. An arbitrary weighted sum must not conceal important trade-offs.
+
+When $\mathcal{F}$ is fixed, the problem asks whether that particular set of
+trajectory families can be made adequate and which parameters provide the
+best margins. When $\mathcal{F}$ is also variable, an outer comparison may
+select among different protocol families. The same universal criteria are used
+in both cases.
+
+\subsection{Prospective Decision Semantics}
+
+For criterion $k$, the prospective result is
+\begin{equation}
+    A_k^{\mathrm{plan}}
+    \left(
+        \Pi_{\boldsymbol{\lambda}}
+        \mid
+        \mathcal{T},
+        \mathcal{H}
+    \right)
+    \in
+    \left\{
+        \textsc{Pass},
+        \textsc{Fail},
+        \textsc{Indeterminate},
+        \textsc{Not Applicable}
+    \right\}.
+\end{equation}
+Its interpretation is phase-qualified:
+\begin{itemize}
+    \item \textsc{Pass} means that the candidate protocol satisfies the
+        declared prospective test over the declared uncertainty set. It does
+        not imply an achieved-data pass.
+    \item \textsc{Fail} means that a known violation exists for the candidate,
+        or that a valid certificate or bound proves no allowed parameter vector
+        can satisfy the requirement.
+    \item \textsc{Indeterminate} means that required declarations or planning
+        models are missing, uncertainty has not been treated adequately, or a
+        search found no feasible candidate without proving infeasibility.
+    \item \textsc{Not Applicable} requires the same explicit scientific
+        justification as in the achieved phase.
+\end{itemize}
+
+Failure of a local or heuristic optimizer to find a feasible point is not, by
+itself, evidence that a trajectory family is inadequate. Every result must
+record the searched bounds, algorithm, initialization, stopping condition,
+random seeds, uncertainty scenarios, and constraint margins.
+
+The overall prospective result uses the same precedence rules as the achieved
+assessment, but is reported as
+\begin{equation}
+    A_{\mathrm{plan}}
+    \left(
+        \Pi_{\boldsymbol{\lambda}}
+        \mid
+        \mathcal{T},
+        \mathcal{H}
+    \right)
+\end{equation}
+and must never be presented as
+$A_{\mathrm{ach}}(D_{\mathrm{ach}}\mid\mathcal{T})$. Final adequacy requires
+the achieved dataset and the retrospective criteria.
 
 
 %=========================================================%
@@ -782,6 +1181,379 @@ mounting, using only its three sensing coils. The calibration task is
     where $u_0$ is the individual sensor being calibrated.
 \end{itemize}
 
+\subsubsection{Prospective Spiral--Lissajous Protocol Design}
+
+The first protocol-design question is restricted to a declared collection of
+spiral and Lissajous trajectory families:
+\begin{quote}
+Do there exist physically executable parameters for this collection such that
+the protocol prospectively satisfies the applicable universal criteria for
+$\mathcal{T}_1$?
+\end{quote}
+The trajectory families are application-specific. The adequacy obligations,
+evidence levels, robustness requirements, and decision semantics used to
+answer the question remain universal.
+
+\paragraph{Normalized force coordinates.}
+For force axis $j\in\{x,y,z\}$, define
+\begin{equation}
+    m_j
+    =
+    \frac{
+        F_j^{\max}+F_j^{\min}
+    }{2},
+    \qquad
+    r_j
+    =
+    \frac{
+        F_j^{\max}-F_j^{\min}
+    }{2},
+\end{equation}
+and represent a target force trajectory as
+\begin{equation}
+    q_j^{\mathrm{target}}(t)
+    =
+    m_j+r_j\xi_j(t),
+    \qquad
+    -1\leq\xi_j(t)\leq1.
+\end{equation}
+This normalization derives from the declared application domain; it must not
+be estimated from a candidate or achieved trajectory. Joint excluded regions
+and operating-condition constraints still apply after axis-wise
+normalization.
+
+\paragraph{Lissajous family.}
+For Lissajous run $\ell$, one possible normalized parameterization is
+\begin{equation}
+    \xi_{j,\ell}^{\mathrm{Lis}}(t)
+    =
+    o_{j,\ell}
+    +
+    a_{j,\ell}
+    \sin
+    \left(
+        2\pi n_{j,\ell}\frac{t}{T_\ell}
+        +
+        \phi_{j,\ell}
+    \right),
+    \qquad
+    0\leq t\leq T_\ell,
+\end{equation}
+where $o_{j,\ell}$ is a normalized offset, $a_{j,\ell}$ is a normalized
+amplitude, $n_{j,\ell}$ is a frequency-ratio parameter,
+$\phi_{j,\ell}$ is a phase, and $T_\ell$ is the duration. At minimum,
+\begin{equation}
+    \left|o_{j,\ell}\right|
+    +
+    a_{j,\ell}
+    \leq 1,
+    \qquad
+    a_{j,\ell}\geq0,
+    \qquad
+    n_{j,\ell}>0,
+    \qquad
+    T_\ell>0,
+    \qquad
+    0\leq\phi_{j,\ell}<2\pi,
+\end{equation}
+before joint-domain, safety, and rig constraints are applied.
+
+For the corresponding target force,
+\begin{align}
+    \max_t
+    \left|
+        \dot{q}_{j,\ell}^{\mathrm{target}}(t)
+    \right|
+    &=
+    \frac{
+        2\pi r_j a_{j,\ell}n_{j,\ell}
+    }{
+        T_\ell
+    },\\
+    \max_t
+    \left|
+        \ddot{q}_{j,\ell}^{\mathrm{target}}(t)
+    \right|
+    &=
+    r_j a_{j,\ell}
+    \left(
+        \frac{
+            2\pi n_{j,\ell}
+        }{
+            T_\ell
+        }
+    \right)^2.
+\end{align}
+These relations connect amplitudes, frequency ratios, and duration to the
+declared loading-rate and rig-dynamic constraints.
+
+When all $n_{j,\ell}$ are integers, the geometric path is closed over its
+fundamental period. Additional exact periods repeat the same static path and
+do not automatically improve D2 coverage, although they may provide repeated
+observations. Likewise, reversing time traverses the same static point set.
+Forward/reverse runs are valuable for testing rate dependence, hysteresis, and
+drift, but they do not constitute new memoryless domain coverage merely by
+changing direction.
+
+\paragraph{Spiral family.}
+The term ``spiral'' is not a complete trajectory definition. Planar,
+cylindrical, spherical, and volume-varying spirals cover different subsets of
+the three-dimensional domain. For spiral run $p$, the application must declare
+a specific normalized mapping
+\begin{equation}
+    \boldsymbol{\xi}_{p}^{\mathrm{Spi}}(t)
+    =
+    \mathbf{p}_{\mathrm{Spi}}
+    \left(
+        \frac{t}{T_p};
+        \boldsymbol{\lambda}_{p}^{\mathrm{Spi}}
+    \right),
+    \qquad
+    0\leq t\leq T_p,
+\end{equation}
+where
+\begin{equation}
+    \mathbf{p}_{\mathrm{Spi}}
+    :
+    [0,1]
+    \times
+    \Lambda_{\mathrm{Spi}}
+    \longrightarrow
+    [-1,1]^3.
+\end{equation}
+The declared parameter vector must identify the centre, radial law, angular
+law, axial or polar progression, number of turns, duration, direction, and
+boundary behavior as applicable. These choices are part of the triaxial
+application, not universal constants.
+
+\paragraph{Rig and sensor planning models.}
+The target force paths do not imply that the rig can command force directly or
+track them exactly. The rigid-rig adapter must map executable commands to
+predicted achieved forces:
+\begin{equation}
+    \mathbf{q}^{\mathrm{pred}}_i
+    =
+    g_{1,\boldsymbol{\eta}}
+    \left(
+        \mathbf{u}_i,
+        \mathbf{z}_i,
+        \text{history}_i
+    \right).
+\end{equation}
+If the rig is position- or displacement-controlled, an inverse or
+trajectory-tracking method must generate $\mathbf{u}_i$ from the target-force
+path. Its residual tracking error belongs in $\Xi_1$.
+
+An initial affine sensor-response prior may be written as
+\begin{equation}
+    \mathbf{s}^{\mathrm{pred}}_i
+    =
+    \mathbf{H}_{\boldsymbol{\eta}}
+    \mathbf{q}^{\mathrm{pred}}_i
+    +
+    \mathbf{d}_{\boldsymbol{\eta}}
+    +
+    \boldsymbol{\epsilon}_{i,\boldsymbol{\eta}},
+\end{equation}
+where the plausible sensitivity, cross-axis, offset, noise, temperature, and
+rate effects are declared through $\boldsymbol{\eta}\in\Xi_1$. This prior may
+come from physical design information, specifications, or separately
+identified pilot evidence. It must not be represented as final calibration
+evidence for the new sensor.
+
+\paragraph{Prospective D2 calculation.}
+For protocol parameter vector $\boldsymbol{\lambda}_1$ and scenario
+$\boldsymbol{\eta}$, let
+\begin{equation}
+    \mathcal{Q}_{\mathrm{pred}}
+    \left(
+        \boldsymbol{\lambda}_1,
+        \boldsymbol{\eta}
+    \right)
+    =
+    \left\{
+        \mathbf{q}^{\mathrm{pred}}_i,
+        \mathbf{z}_i
+    \right\}_{i=1}^{N_{\mathrm{pred}}}
+\end{equation}
+contain the union of all predicted runs. The prospective fill-distance
+calculation is
+\begin{equation}
+    \widehat{h}_{\mathrm{plan}}
+    \left(
+        \boldsymbol{\lambda}_1,
+        \boldsymbol{\eta}
+    \right)
+    =
+    \max_{
+        \mathbf{x}
+        \in
+        \Gamma_{\mathcal{X}_1,\mathrm{valid}}
+    }
+    \min_{
+        \left(
+            \mathbf{q}^{\mathrm{pred}}_i,
+            \mathbf{z}_i
+        \right)
+        \in
+        \mathcal{Q}_{\mathrm{pred}}
+    }
+    d_{\mathcal{X}_1}
+    \left(
+        \mathbf{x},
+        \left(
+            \mathbf{q}^{\mathrm{pred}}_i,
+            \mathbf{z}_i
+        \right)
+    \right).
+\end{equation}
+It is evaluated jointly across forces and conditions after applying
+predeclared exclusions. A collection of curves is not considered
+space-filling merely because each force axis separately reaches its minimum
+and maximum. Coverage must be reported for the complete protocol and for the
+planned development and test partitions as required by D5 and D6; adequate
+coverage of their union must not hide an unsupported partition.
+
+\paragraph{Prospective D3 calculation.}
+For the affine memoryless model, construct the predicted design matrix using
+only samples assigned prospectively to development runs:
+\begin{equation}
+    \mathbf{X}_{1,\mathrm{dev}}^{\mathrm{pred}}
+    \left(
+        \boldsymbol{\lambda}_1,
+        \boldsymbol{\eta}
+    \right)
+    =
+    \begin{bmatrix}
+        1 &
+        \widetilde{c}^{\mathrm{pred}}_{1,1} &
+        \widetilde{c}^{\mathrm{pred}}_{2,1} &
+        \widetilde{c}^{\mathrm{pred}}_{3,1}\\
+        \vdots & \vdots & \vdots & \vdots\\
+        1 &
+        \widetilde{c}^{\mathrm{pred}}_{1,N} &
+        \widetilde{c}^{\mathrm{pred}}_{2,N} &
+        \widetilde{c}^{\mathrm{pred}}_{3,N}
+    \end{bmatrix}.
+\end{equation}
+The planned structural and conditioning requirements are
+\begin{equation}
+    \operatorname{rank}
+    \left(
+        \mathbf{X}_{1,\mathrm{dev}}^{\mathrm{pred}}
+    \right)
+    =4,
+    \qquad
+    \kappa
+    \left(
+        \mathbf{X}_{1,\mathrm{dev}}^{\mathrm{pred}}
+    \right)
+    \leq
+    \kappa_{\max,1},
+\end{equation}
+under every required uncertainty scenario.
+
+If only a force-space proxy is available, define
+\begin{equation}
+    \mathbf{X}_{q,1,\mathrm{dev}}^{\mathrm{pred}}
+    =
+    \begin{bmatrix}
+        \mathbf{1} &
+        \widetilde{\mathbf{F}}^{\mathrm{pred}}_{x} &
+        \widetilde{\mathbf{F}}^{\mathrm{pred}}_{y} &
+        \widetilde{\mathbf{F}}^{\mathrm{pred}}_{z}
+    \end{bmatrix}.
+\end{equation}
+For the deterministic part of an affine sensor prior with nonsingular
+$\mathbf{H}_{\boldsymbol{\eta}}$, there is an invertible augmented
+transformation $\mathbf{B}_{\boldsymbol{\eta}}$ such that
+\begin{equation}
+    \mathbf{X}_{1,\mathrm{dev}}^{\mathrm{pred}}
+    =
+    \mathbf{X}_{q,1,\mathrm{dev}}^{\mathrm{pred}}
+    \mathbf{B}_{\boldsymbol{\eta}}.
+\end{equation}
+The two matrices then have the same rank, so force-space rank provides a
+structural proxy. Their condition numbers need not be equal. Force-space
+conditioning alone therefore cannot establish robust coil-space
+conditioning.
+
+\paragraph{Joint parameter-selection problem.}
+Let $\boldsymbol{\lambda}_1$ contain every spiral and Lissajous run parameter,
+condition schedule, sampling choice, and repetition allocation. The runs are
+optimized as one protocol, not as independently acceptable curves. One
+possible formulation is
+\begin{equation}
+    \min_{\boldsymbol{\lambda}_1}
+    T_{\mathrm{total}}
+    \left(
+        \boldsymbol{\lambda}_1
+    \right)
+\end{equation}
+subject to
+\begin{align}
+    \boldsymbol{\lambda}_1
+    &\in
+    \Lambda_{1,\mathrm{safe}},\\
+    \max_{\boldsymbol{\eta}\in\Xi_1}
+    \widehat{h}_{\mathrm{plan}}
+    \left(
+        \boldsymbol{\lambda}_1,
+        \boldsymbol{\eta}
+    \right)
+    &\leq
+    h_{\max,1},\\
+    \min_{\boldsymbol{\eta}\in\Xi_1}
+    \operatorname{rank}
+    \left(
+        \mathbf{X}_{1,\mathrm{dev}}^{\mathrm{pred}}
+        \left(
+            \boldsymbol{\lambda}_1,
+            \boldsymbol{\eta}
+        \right)
+    \right)
+    &=4,\\
+    \max_{\boldsymbol{\eta}\in\Xi_1}
+    \kappa
+    \left(
+        \mathbf{X}_{1,\mathrm{dev}}^{\mathrm{pred}}
+        \left(
+            \boldsymbol{\lambda}_1,
+            \boldsymbol{\eta}
+        \right)
+    \right)
+    &\leq
+    \kappa_{\max,1}.
+\end{align}
+The required D1 execution limits, D4 independent-run design, D5 partition,
+D6 precision plan, and D7 provenance are additional constraints. A
+multi-objective implementation may instead report nondominated trade-offs
+among coverage, smallest singular value, conditioning, robustness, duration,
+and actuation cost.
+
+The currently discussed eight-run collection---two spiral directions and
+three Lissajous phase configurations in forward and reverse directions---is a
+candidate family set $\mathcal{F}_1$, not an adequacy conclusion. The first
+search may hold this family set fixed and optimize its parameters. A later
+outer comparison may evaluate alternative or hybrid families under the same
+universal requirements.
+
+\paragraph{Prospective conclusion and transition to acquisition.}
+A parameterized spiral--Lissajous protocol receives a prospective
+\textsc{Pass} only if it satisfies every applicable planning obligation over
+the declared uncertainty treatment. It receives a prospective \textsc{Fail}
+for a known violating candidate, or for the entire family only when valid
+evidence proves that no parameter vector in the declared bounds can satisfy
+the requirements. Failure of an optimizer to find a solution without such a
+proof is \textsc{Indeterminate}.
+
+The selected protocol, parameters, rig commands, uncertainty scenarios,
+optimizer settings, seeds, planned run identities, and development/test
+allocation must then be frozen and hashed. After acquisition, D1--D7 are
+evaluated again using $D_{\mathrm{ach}}$. Differences between commanded,
+predicted, and achieved trajectories become evidence about the protocol and
+planning models rather than being hidden by the prospective conclusion.
+
 \subsubsection{Application of D0}
 
 The first task currently defines the three coil inputs, three reference-force
@@ -811,24 +1583,40 @@ frame-transformation evidence are evaluated by D1 from the instrument and
 setup profiles. They remain high-priority declarations even though they are
 not members of the 37-item D0 list.
 
-The 19 D2 and D3 declarations must be resolved before prospective trajectory
-comparison. They comprise the numerical limits of $\Omega_1$, the temperature
-and loading-rate ranges, joint-domain exclusions, evaluation-grid resolutions,
-the maximum fill distance, the handling of operating conditions, and a
-versioned confounding review. The D6 acceptance thresholds and analysis choices
-must be fixed before final acquisition and test evaluation. The three
-per-axis calibrated-force uncertainty estimates are populated only after the
-locked uncertainty method is applied to acquired evidence.
+The 19 D2 and D3 declarations appearing in this D0 snapshot must be resolved
+before prospective trajectory comparison. They comprise the numerical limits
+of $\Omega_1$, the temperature and loading-rate ranges, joint-domain
+exclusions, evaluation-grid resolutions, the maximum fill distance, the
+handling of operating conditions, and a versioned confounding review.
+Prospective D3 additionally requires declared coil-normalization bounds,
+relative numerical-rank tolerance, and maximum condition number. These
+criterion-specific values are currently reported by D3 rather than counted in
+the 37-item D0 snapshot.
 
-The machine-readable classification is maintained in
+Prospective D0 also requires the trajectory-family definitions, parameter
+bounds, rig model, sensor-response prior, execution constraints, uncertainty
+set $\Xi_1$, optimization method, and prospective decision thresholds defined
+in the preceding section. These declarations are part of the theoretical
+planning framework and are not yet represented by the current executable D0
+configuration.
+
+The D6 acceptance thresholds and analysis choices must be fixed before final
+acquisition and test evaluation. The three per-axis calibrated-force
+uncertainty estimates are populated only after the locked uncertainty method
+is applied to acquired evidence; their absence does not prevent a
+phase-qualified prospective assessment when the method and acceptance
+requirements have already been declared.
+
+The current achieved-task classification is maintained in
 \texttt{triaxial\_t1\_declarations.yaml}, with the supervisor decision sequence
 and permitted evidence sources in
 \texttt{triaxial\_t1\_supervisor\_worksheet.md}. A software audit checks that
-the register exactly covers the live D0 missing-evidence paths. This alignment
-does not make D0 pass; until the supported values are entered in their owning
+the register exactly covers the current live D0 missing-evidence paths. It
+does not yet audit the new prospective declarations. This alignment does not
+make achieved D0 pass; until the supported values are entered in their owning
 profiles, D0 and the affected D2, D3, and D6 assessments remain
-\textsc{Indeterminate}. The missing values must not be inferred from the
-dataset being assessed.
+\textsc{Indeterminate}. Missing values must not be inferred from the dataset
+being assessed.
 
 \subsubsection{Application of D1}
 
@@ -1372,6 +2160,13 @@ declared.
 
 For the first application, the reproducibility package must contain:
 \begin{itemize}
+    \item the exact spiral and Lissajous family definitions, parameter bounds,
+        selected parameters, condition schedules, and generated rig commands;
+    \item the rig and sensor planning models, their evidence sources,
+        uncertainty scenarios, and constraint definitions;
+    \item the optimizer implementation, objectives, initializations, stopping
+        conditions, random seeds, candidate results, feasibility margins, and
+        any claimed infeasibility certificate;
     \item the immutable raw coil, reference F/T, timestamp, and run metadata;
     \item a SHA-256 manifest for every raw and configuration file;
     \item the sensor, reference instrument, rig, and acquisition profiles;
@@ -1380,12 +2175,14 @@ For the first application, the reproducibility package must contain:
     \item the development and test run identifiers;
     \item the software version, source-control commit, dependencies, and random
         seeds; and
-    \item the generated criterion metrics, outcomes, and diagnostic figures.
+    \item the generated prospective and achieved criterion metrics, outcomes,
+        diagnostic figures, and commanded--predicted--achieved comparisons.
 \end{itemize}
 
 Let $\mathcal{E}_1$ denote this evidence package. The first application
 satisfies D7 when an independent execution using $\mathcal{E}_1$ reproduces
-the D1--D6 outcomes and numerical results within the declared numerical
-tolerances. Missing raw data, unresolved file-integrity changes, or
+the prospective parameter-selection results and the achieved D1--D6 outcomes
+and numerical results within the declared numerical tolerances. Missing
+planning assumptions, raw data, unresolved file-integrity changes, or
 undocumented preprocessing make the assessment non-reproducible.
 \end{document}
