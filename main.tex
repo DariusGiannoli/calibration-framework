@@ -100,6 +100,112 @@ protocol will achieve. Consequently, a prospective conclusion is a
 model-conditional design statement. It is not evidence that the final
 acquisition or calibration has already succeeded.
 
+\section{Literature Foundations and Research Positioning}
+
+\subsection{Calibration, Metrology, and Fitness for Purpose}
+
+The premise that calibration evidence must be interpreted relative to a
+declared measurand, operating conditions, reference, model, and intended use is
+grounded in established metrology. The Guide to the Expression of Uncertainty
+in Measurement (GUM) provides general rules for evaluating and expressing
+measurement uncertainty, including during the conceptual design and theoretical
+analysis of experiments \cite{jcgm100}. The International Vocabulary of
+Metrology (VIM) defines metrological traceability through a documented
+calibration chain in which every link contributes to measurement uncertainty
+\cite{jcgm200}. ISO/IEC 17025 places related requirements on the competence and
+consistent operation of testing and calibration laboratories
+\cite{iso17025}.
+
+The design of calibration experiments is also an established field. Prior work
+has treated the number and location of calibration points, repetitions,
+influence quantities, regression model, reference standards, and uncertainty
+as coupled design decisions \cite{betta2001}. For linear calibration,
+optimal-design criteria can be formulated from parameter covariance or the
+uncertainty incurred when the calibrated instrument is subsequently used
+\cite{forbes2013}. The task tuple $\mathcal{T}$ and D0 therefore do not replace
+these metrological foundations. They make the assumptions needed to apply them
+explicit and machine-checkable.
+
+\subsection{Optimal Experiment and Excitation-Trajectory Design}
+
+Prospective selection of calibration inputs belongs to optimal experimental
+design and input design for system identification. Established formulations
+choose inputs to improve A-, D-, or E-optimal functions of the Fisher
+information matrix while respecting input and output constraints
+\cite{manchester2010}. Continuous-time trajectories have likewise been
+optimized to increase Fisher information and improve parameter estimation
+\cite{wilson2014}. Calibration experimental design has been extended to include
+model discrepancy and other planning uncertainty \cite{hu2017}, and reusable
+software already exists for dynamic optimal experimental design
+\cite{martensen2024}. Recent active multi-sensor calibration work similarly
+uses an observability metric to generate informative trajectories
+\cite{wang2025active}.
+
+The prospective component of the present framework builds on this literature.
+Its intended distinction is not a new claim that informative inputs can be
+optimized. It is the use of a common, auditable adequacy contract to constrain
+that optimization and then to reassess the achieved acquisition without
+equating planned information with measured evidence.
+
+\subsection{Coverage, Dependence, Validation, and Reproducibility}
+
+The achieved-data criteria also draw on established statistical and
+computational practice. D2 uses a minimax-distance or fill-distance view of
+space-filling design \cite{pronzato2017}. D4 recognizes the classical result
+that autocorrelation reduces the effective number of independent observations
+\cite{bayley1946}. D5 follows the principle that validation units must respect
+the dependence and generalization structure of the data; otherwise information
+leakage can produce optimistic performance estimates
+\cite{kaufman2011,roberts2017}. D6 uses held-out performance and
+independent-unit resampling, informed by bootstrap methods
+\cite{efron1993}, while retaining the separate metrological requirement to
+evaluate uncertainty in the calibrated measurement \cite{jcgm100}. D7 follows
+reproducible-computational-research and FAIR-data principles by binding claims
+to identifiable data, configurations, software, and provenance
+\cite{sandve2013,wilkinson2016}.
+
+\subsection{Multi-Axis Force/Torque Calibration and Trajectory Families}
+
+Multi-axis force/torque calibration has previously used redundant continuous
+loading and singular-value methods \cite{voyles1997}, robot models to generate
+expected wrenches during arbitrary motions \cite{andrade2016}, and dedicated
+machines that generate independent force and torque combinations
+\cite{wang2022machine}. Smooth spiral and Lissajous trajectories are also not
+new as data-collection paths: spiral motion has been used for repeatable
+six-degree-of-freedom calibration excitation \cite{zhang2022}, and spiral and
+Lissajous paths have been used to construct independent development and test
+datasets in robotic sensing \cite{ha2023}.
+
+Accordingly, this project does not claim novelty for the names ``spiral'' or
+``Lissajous'', for affine least-squares calibration, or for any individual
+D0--D7 diagnostic. These are application choices and established analytical
+tools. Their suitability for the present sensor must be demonstrated rather
+than assumed.
+
+\subsection{Proposed Synthesis and Scope of the Contribution}
+
+The research contribution under investigation is the integration of the prior
+foundations into an executable, task-conditioned framework that:
+\begin{enumerate}
+    \item expresses prospective protocol adequacy and achieved-dataset
+        adequacy against the same declared calibration task;
+    \item preserves the distinction between commanded, model-predicted, and
+        achieved evidence;
+    \item combines coverage, identifiability, replication, validation,
+        performance precision, measurement uncertainty, and provenance without
+        reducing them to a single information score;
+    \item separates adequacy of the evidence from acceptance of the calibrated
+        sensor; and
+    \item delegates sensor-, rig-, model-, and trajectory-specific calculations
+        to adapters while retaining common decision semantics.
+\end{enumerate}
+
+The current novelty statement is therefore a research hypothesis, not an
+assertion of priority. A systematic literature review and comparative
+evaluation against conventional calibration design, Fisher-information-only
+trajectory design, and coverage-only design are required before making a
+definitive novelty claim.
+
 
 %==================================================================%
 \section{Universal Criteria}
@@ -116,7 +222,9 @@ D0 is a precondition for both prospective protocol assessment and achieved
 dataset assessment. Each component of $\mathcal{T}$ must be specified with
 enough detail to evaluate the applicable criteria. In particular, the claimed
 domains, model family, performance requirements, and generalization target
-cannot remain implicit.
+cannot remain implicit. This requirement operationalizes the
+fitness-for-purpose and explicit-measurand principles of metrology
+\cite{jcgm100,jcgm200}.
 
 Let $\operatorname{Specified}(x)$ indicate that $x$ is defined at the level
 required for assessment. D0 is satisfied when
@@ -183,7 +291,9 @@ calibration task. Missing values, exclusions, clipping, saturation, and other
 invalid observations must be detected and handled using a documented rule.
 Excluding invalid observations does not automatically satisfy D1: the
 remaining dataset and the exclusion mechanism must still support the declared
-claim.
+claim. Reference uncertainty and traceability evidence are interpreted
+according to the GUM, VIM, and applicable laboratory requirements rather than
+being inferred from the acquired dataset \cite{jcgm100,jcgm200,iso17025}.
 
 D1 is \textsc{Pass} when the retained sensor--reference pairs are trustworthy
 and the required measurement evidence is available. It is \textsc{Fail} when
@@ -241,7 +351,10 @@ $d_{\mathcal{X}}$, one possible coverage diagnostic is the fill distance
 \end{equation}
 For categorical or mixed domains, coverage is instead evaluated within the
 declared condition strata. The distance, partition, resolution, and threshold
-are application-dependent tests rather than universal constants.
+are application-dependent tests rather than universal constants. This
+diagnostic is a minimax space-filling criterion; it is adopted as one possible
+coverage test rather than proposed as a new design concept
+\cite{pronzato2017}.
 
 D2 is \textsc{Pass} when the supported and excluded regions justify the full
 claim, \textsc{Fail} when a claimed region is known to be unsupported, and
@@ -314,6 +427,13 @@ Practical identifiability is evaluated using the condition number
          {\sigma_{\min}(\mathbf{J}_D)}.
 \end{equation}
 
+These rank and conditioning diagnostics are model-specific forms of the
+information and parameter-precision reasoning used in optimal experimental
+design \cite{forbes2013,manchester2010,wilson2014}. Under independent
+homoscedastic Gaussian errors, the Fisher information of a linear model is
+proportional to $\mathbf{J}_D^{\mathsf{T}}\mathbf{J}_D$; the singular values of
+$\mathbf{J}_D$ therefore quantify corresponding information directions.
+
 The dataset satisfies D3 when
 \begin{equation}
     \operatorname{rank}(\mathbf{J}_D)=p,
@@ -382,7 +502,8 @@ where $\mathcal{V}$ is the set of signals relevant to the calibration.
 
 The effective-sample-size expression is not a universal estimator: the
 appropriate dependence model depends on the signals, sampling process, and
-experimental design. D4 is \textsc{Pass} when the required independent units,
+experimental design \cite{bayley1946}. D4 is \textsc{Pass} when the required
+independent units,
 repetitions, and dependence evidence are available, \textsc{Fail} when
 recorded samples are incorrectly treated as independent or required
 repetitions are absent, and \textsc{Indeterminate} when the independent unit or
@@ -416,7 +537,9 @@ be divided internally as
     D_{\mathrm{select}},
 \end{equation}
 or evaluated through an equivalent group-aware resampling procedure. The final
-test data remain outside all such decisions.
+test data remain outside all such decisions. This restriction follows
+established leakage-avoidance and structured cross-validation principles
+\cite{kaufman2011,roberts2017}.
 
 Let $g_i$ identify the independent experimental unit required by the
 generalization claim, such as a run, operating condition, or physical sensor
@@ -489,6 +612,9 @@ For each test sample $i$, the calibration error is
 The uncertainty $U(\widehat{\mathbf{q}}_i)$ associated with an individual
 calibrated estimate is distinct from uncertainty in a reported aggregate
 performance metric. Both must be addressed when required by $\mathcal{P}$.
+The former is a measurement-uncertainty question governed by an explicit
+measurement model \cite{jcgm100}; the latter is a statistical uncertainty
+question about estimated performance.
 
 Let $m_\ell$ be a required performance metric. Its estimate on the independent
 test data is
@@ -563,7 +689,9 @@ $\mathcal{P}$ is a separate acceptance result.
 \subsection{Criterion D7: Reproducibility and Provenance}
 
 D7 determines whether the dataset assessment can be independently reproduced
-and audited. The evidence package is represented as
+and audited. This criterion instantiates established reproducible-research and
+FAIR-data principles as an executable calibration obligation
+\cite{sandve2013,wilkinson2016}. The evidence package is represented as
 \begin{equation}
     \mathcal{E}
     =
@@ -646,6 +774,13 @@ obligation irrelevant; it is then excluded from the overall aggregation.
 
 %==================================================================%
 \section{Prospective Protocol Adequacy and Design}
+
+This phase formulates protocol selection as a constrained optimal experimental
+design problem \cite{manchester2010,wilson2014,martensen2024}. Unlike a
+single-objective information design, the proposed assessment retains separate
+coverage, validity, replication, validation, uncertainty, and provenance
+obligations. The design remains conditional on the planning model and its
+uncertainty \cite{hu2017}.
 
 \subsection{Evidence Levels}
 
@@ -878,6 +1013,12 @@ measure calculated from $D_{\mathrm{pred}}$, and let
 $I_{\mathcal{M}}(\boldsymbol{\lambda},\boldsymbol{\eta})$ be the
 model-specific D3 information result.
 
+The use of an uncertainty set $\Xi$ acknowledges that a protocol optimized
+against one nominal rig and sensor model can be misleading when model
+discrepancy or tracking uncertainty is material \cite{hu2017}. Robust
+feasibility is therefore treated as a requirement on the declared planning
+assumptions, not as a guarantee about unmodelled effects.
+
 A robustly feasible protocol parameter vector satisfies
 \begin{equation}
     \boldsymbol{\lambda}
@@ -985,6 +1126,14 @@ the achieved dataset and the retrospective criteria.
 \section{Triaxial Force Sensor}
 
 \subsection{General Triaxial Calibration Task}
+
+The application builds on established multi-axis force/torque calibration
+approaches, including continuous redundant loading, affine calibration
+matrices, model-generated reference wrenches, and dedicated multi-axis
+calibration rigs \cite{voyles1997,andrade2016,wang2022machine}. The contribution
+sought here is not a new definition of force/torque calibration, but a
+prospective and retrospective adequacy assessment for the protocol and evidence
+used to perform it.
 
 For the triaxial sensor, the calibration task is defined as follows:
 \begin{itemize}
@@ -1193,6 +1342,12 @@ $\mathcal{T}_1$?
 The trajectory families are application-specific. The adequacy obligations,
 evidence levels, robustness requirements, and decision semantics used to
 answer the question remain universal.
+
+The choice of these smooth trajectory families is motivated by their prior use
+for repeatable multi-axis excitation and sensing datasets
+\cite{zhang2022,ha2023}. That precedent justifies including them as candidate
+families; it does not establish their adequacy for the present force domain,
+rig, sensor response, or generalization claim.
 
 \paragraph{Normalized force coordinates.}
 For force axis $j\in\{x,y,z\}$, define
@@ -1482,7 +1637,8 @@ conditioning.
 Let $\boldsymbol{\lambda}_1$ contain every spiral and Lissajous run parameter,
 condition schedule, sampling choice, and repetition allocation. The runs are
 optimized as one protocol, not as independently acceptable curves. One
-possible formulation is
+possible formulation is a constrained optimal-design problem
+\cite{manchester2010,wilson2014}:
 \begin{equation}
     \min_{\boldsymbol{\lambda}_1}
     T_{\mathrm{total}}
@@ -2076,7 +2232,9 @@ The estimated per-axis performance is
 
 Because samples within a run are correlated, confidence intervals are
 estimated by resampling complete test runs rather than individual samples.
-For bootstrap repetitions $b=1,\ldots,B$, let
+This makes the resampling unit follow the independent experimental unit, in
+accordance with the logic of the bootstrap \cite{efron1993}. For bootstrap
+repetitions $b=1,\ldots,B$, let
 $\widehat{\operatorname{RMSE}}_{j}^{(b)}$ be the metric calculated after
 resampling the runs in $\mathcal{R}_{\mathrm{test}}$. A
 $(1-\alpha)$ confidence interval is
@@ -2185,4 +2343,25 @@ the prospective parameter-selection results and the achieved D1--D6 outcomes
 and numerical results within the declared numerical tolerances. Missing
 planning assumptions, raw data, unresolved file-integrity changes, or
 undocumented preprocessing make the assessment non-reproducible.
+
+\section*{Acknowledgements}
+\addcontentsline{toc}{section}{Acknowledgements}
+
+The development of this research plan has benefited from supervisory guidance
+and critical discussions concerning the calibration rig, the sensor model, and
+the proposed use of spiral and Lissajous trajectories. The author gratefully
+acknowledges those contributions.
+
+This work also builds on the research communities in metrology, calibration
+experimental design, system identification, optimal excitation, statistical
+validation, and reproducible research. Their intellectual contributions are
+acknowledged through the citations in the literature-positioning section and
+at the points where their methods are used. Citation of those foundations is
+not intended to imply that their authors endorse the present framework. Names
+of contributors, institutional support, facilities, and grant identifiers must
+be added here before formal submission when applicable.
+
+\bibliographystyle{unsrt}
+\bibliography{references}
+
 \end{document}
